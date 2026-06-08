@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Job Operations &amp; Daily Reports — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="elec">
+
+<div class="demo-banner">
+  <a href="../index.html#electrical">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · live board</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Job Operations</div>
+      <div class="app-header__sub" id="hdr-sub">Daily reports · materials · change orders</div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <span class="avatar" id="role-av">MR</span>
+      <select id="role" class="inp" style="width:auto;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)">
+        <option value="foreman" selected>Foreman — Miguel</option>
+        <option value="admin">Office Admin</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- ============ FOREMAN (mobile phone) ============ -->
+  <div id="view-foreman">
+    <div class="phone-stage">
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__notch"></div>
+          <div class="m-header">
+            <span class="avatar" id="m-av">MR</span>
+            <div><h3 id="m-title">My Jobs</h3><div class="small" style="color:rgba(255,255,255,.8)">Foreman · Miguel R.</div></div>
+            <span class="spacer badge" style="background:rgba(255,255,255,.18);color:#fff" id="offline-badge">⟳ 1 synced offline</span>
+          </div>
+          <div class="m-body" id="m-body"></div>
+          <div class="m-tabbar" id="m-tabbar">
+            <button data-mtab="jobs" class="active">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              Jobs
+            </button>
+            <button data-mtab="report">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 14h6M9 17h4"/></svg>
+              New Report
+            </button>
+            <button data-mtab="materials">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8l-9-5-9 5v8l9 5z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>
+              Materials
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ OFFICE ADMIN (desktop) ============ -->
+  <div id="view-admin" style="display:none">
+    <div class="grid grid-4" style="margin-top:18px">
+      <div class="stat"><div class="label">In review queue</div><div class="value" id="kpi-queue"></div><div class="delta up">daily reports</div></div>
+      <div class="stat"><div class="label">Active jobs</div><div class="value" id="kpi-jobs"></div><div class="delta up">across 3 foremen</div></div>
+      <div class="stat"><div class="label">Open change orders</div><div class="value" id="kpi-co"></div><div class="delta up">pending PDF</div></div>
+      <div class="stat"><div class="label">Low-stock flags</div><div class="value" id="kpi-low" style="color:var(--bad)"></div><div class="delta down">need reorder</div></div>
+    </div>
+
+    <div data-tabs style="margin-top:8px">
+      <div class="tabs">
+        <button class="tab active" data-panel="p-queue">Review Queue <span class="badge-num" id="queue-num"></span></button>
+        <button class="tab" data-panel="p-jobs">Jobs</button>
+        <button class="tab" data-panel="p-docs">Documents</button>
+        <button class="tab" data-panel="p-co">Change Orders</button>
+      </div>
+
+      <!-- REVIEW QUEUE -->
+      <section class="panel active" id="p-queue">
+        <div class="card card-pad">
+          <div class="row"><h3 style="margin:0">Submitted daily reports</h3><span class="spacer small muted">Click a row to review &amp; sign off</span></div>
+          <div class="table-wrap" style="box-shadow:none;border:none;margin-top:10px">
+            <table class="t">
+              <thead><tr><th>Foreman</th><th>Job</th><th>Date</th><th>Compliance</th><th class="num">Action</th></tr></thead>
+              <tbody id="queue-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- JOBS -->
+      <section class="panel" id="p-jobs">
+        <div class="card card-pad">
+          <div class="row"><h3 style="margin:0">All jobs</h3><span class="spacer small muted">Admin sees every job across the company</span></div>
+          <div class="table-wrap" style="box-shadow:none;border:none;margin-top:10px">
+            <table class="t">
+              <thead><tr><th>Job</th><th>Status</th><th>Foreman</th><th class="num">Reports</th><th class="num">Change orders</th></tr></thead>
+              <tbody id="jobs-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- DOCUMENTS -->
+      <section class="panel" id="p-docs">
+        <div class="card card-pad">
+          <div class="row wrap" style="gap:10px">
+            <h3 style="margin:0">Job documents</h3>
+            <span class="spacer"></span>
+            <select id="doc-job" class="inp" style="width:auto"><option value="">All jobs</option></select>
+            <select id="doc-type" class="inp" style="width:auto">
+              <option value="">All types</option>
+              <option>Bid Docs</option><option>Plans</option><option>Submittals</option>
+              <option>RFIs</option><option>Change Orders</option><option>Permits</option>
+            </select>
+            <button class="btn btn-primary btn-sm" id="doc-upload">+ Upload</button>
+          </div>
+          <div class="table-wrap" style="box-shadow:none;border:none;margin-top:12px">
+            <table class="t">
+              <thead><tr><th>Document</th><th>Type</th><th>Job</th><th>Uploaded</th><th class="num">Size</th></tr></thead>
+              <tbody id="docs-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHANGE ORDERS -->
+      <section class="panel" id="p-co">
+        <div class="card card-pad">
+          <div class="row wrap"><h3 style="margin:0">Change Order #CO-118 — Hospital Wing C</h3><span class="badge warn spacer">Draft</span></div>
+          <p class="small muted" style="margin:4px 0 12px">Add line items below. Totals recalculate live. Markup and tax apply to the subtotal.</p>
+          <div class="table-wrap" style="box-shadow:none;border:none">
+            <table class="t">
+              <thead><tr><th style="min-width:200px">Description</th><th>Type</th><th class="num">Qty</th><th class="num">Unit cost</th><th class="num">Total</th><th></th></tr></thead>
+              <tbody id="co-rows"></tbody>
+            </table>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="co-add" style="margin-top:12px">+ Add line item</button>
+
+          <div class="grid grid-2" style="margin-top:18px">
+            <div class="card card-pad" style="box-shadow:none;background:var(--d-surface-2)">
+              <div class="grid grid-2">
+                <div class="field" style="margin:0"><label class="lbl">Markup %</label><input class="inp" type="number" id="co-markup" value="15" min="0" step="1"></div>
+                <div class="field" style="margin:0"><label class="lbl">Tax %</label><input class="inp" type="number" id="co-tax" value="8.25" min="0" step="0.25"></div>
+              </div>
+            </div>
+            <div class="card card-pad" style="box-shadow:none">
+              <table class="t" style="font-size:.92rem">
+                <tr><td>Subtotal</td><td class="num" id="co-subtotal"></td></tr>
+                <tr><td>Markup (<span id="co-markup-lbl"></span>)</td><td class="num" id="co-markup-amt"></td></tr>
+                <tr><td>Tax (<span id="co-tax-lbl"></span>)</td><td class="num" id="co-tax-amt"></td></tr>
+                <tr style="font-weight:800;background:var(--d-surface-2)"><td>Grand total</td><td class="num" id="co-grand"></td></tr>
+              </table>
+            </div>
+          </div>
+          <div class="row" style="margin-top:16px">
+            <button class="btn btn-primary spacer" id="co-pdf">⬇ Save &amp; PDF</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Drawer (shared) ============ -->
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer__head"><h3 style="margin:0" id="dr-title">Detail</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body" id="dr-body"></div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  "use strict";
+  var m = FS.money, m0 = FS.money0;
+
+  // ---------- Seeded data (fictional) ----------
+  function seed() {
+    return {
+      jobs: [
+        { id:"J-A", name:"Retail TI — Building A", foreman:"Miguel", status:"In Progress", docs:6, change:1, parts:[
+          { p:"Wire 12AWG (ft)", est:4000, used:2600 },
+          { p:'Conduit 3/4" EMT (ft)', est:1200, used:740 },
+          { p:"20A Breakers", est:48, used:44 },
+          { p:'Junction boxes 4"', est:60, used:38 }
+        ]},
+        { id:"J-C", name:"Hospital Wing C", foreman:"Miguel", status:"In Progress", docs:14, change:2, parts:[
+          { p:"Wire 10AWG (ft)", est:6500, used:6100 },
+          { p:'Conduit 1" RMC (ft)', est:2200, used:2180 },
+          { p:"30A Breakers", est:36, used:35 },
+          { p:"Isolated-ground recept.", est:90, used:62 }
+        ]},
+        { id:"J-D", name:"Warehouse Dock 4", foreman:"Miguel", status:"Punch List", docs:4, change:0, parts:[
+          { p:"Wire 8AWG (ft)", est:1800, used:1800 },
+          { p:"Hi-bay fixtures", est:24, used:24 },
+          { p:"Disconnect switches", est:8, used:6 }
+        ]},
+        { id:"J-P", name:"Mixed-Use — Phase 2", foreman:"José", status:"In Progress", docs:9, change:1, parts:[
+          { p:"Wire 12AWG (ft)", est:5200, used:1900 },
+          { p:'Conduit 3/4" EMT (ft)', est:1600, used:520 }
+        ]},
+        { id:"J-T", name:"Retail TI — Building A (Ph.2)", foreman:"Tyler", status:"Mobilizing", docs:2, change:0, parts:[
+          { p:"Panel — 200A MLO", est:2, used:0 }
+        ]}
+      ],
+      // submitted daily reports already in admin queue
+      queue: [
+        { id:"R-1042", foreman:"José", job:"Mixed-Use — Phase 2", date:"Jun 6", crew:5, hours:9, weather:"Cloudy", work:"Pulled feeders to Panel B; terminated 4 home runs on level 2.", photos:3, delay:false, offline:true },
+        { id:"R-1041", foreman:"Tyler", job:"Retail TI — Building A (Ph.2)", date:"Jun 6", crew:3, hours:8, weather:"Sunny", work:"Set 200A MLO panel, rough-in for storefront lighting.", photos:2, delay:true, offline:false },
+        { id:"R-1039", foreman:"Miguel", job:"Hospital Wing C", date:"Jun 5", crew:6, hours:10, weather:"Rain", work:"Conduit runs in corridor C; coordinated with mechanical on ceiling space.", photos:4, delay:true, offline:false }
+      ],
+      docs: [
+        { name:"Building A — Power Plans Rev C", type:"Plans", job:"Retail TI — Building A", date:"Jun 2", size:"8.4 MB" },
+        { name:"Wing C — Electrical Submittal Pkg", type:"Submittals", job:"Hospital Wing C", date:"Jun 1", size:"12.1 MB" },
+        { name:"RFI-204 — Panel relocation", type:"RFIs", job:"Hospital Wing C", date:"Jun 4", size:"310 KB" },
+        { name:"Bid Set — Mixed-Use Ph.2", type:"Bid Docs", job:"Mixed-Use — Phase 2", date:"May 22", size:"22.6 MB" },
+        { name:"CO-117 (executed)", type:"Change Orders", job:"Hospital Wing C", date:"May 30", size:"540 KB" },
+        { name:"Electrical Permit — Dock 4", type:"Permits", job:"Warehouse Dock 4", date:"May 18", size:"180 KB" },
+        { name:"Building A — Lighting Plans Rev B", type:"Plans", job:"Retail TI — Building A", date:"May 26", size:"6.9 MB" }
+      ],
+      coLines: [
+        { desc:"Add 3 dedicated circuits — imaging room", type:"labor", qty:24, unit:92 },
+        { desc:"#6 THHN copper wire", type:"material", qty:380, unit:1.85 },
+        { desc:"Scissor lift rental (2 days)", type:"equipment", qty:2, unit:340 },
+        { desc:"Fire-stop subcontractor", type:"sub", qty:1, unit:1450 }
+      ]
+    };
+  }
+  var DB = seed();
+
+  // foreman's own jobs only (role-scoped)
+  function myJobs() { return DB.jobs.filter(function (j) { return j.foreman === "Miguel"; }); }
+
+  function statusBadge(s) {
+    var c = s === "Punch List" ? "warn" : s === "Mobilizing" ? "muted" : "info";
+    return '<span class="badge ' + c + '">' + FS.esc(s) + '</span>';
+  }
+  function partRemaining(p) { return p.est - p.used; }
+  function partLow(p) { return p.est > 0 && partRemaining(p) / p.est <= 0.12; }
+
+  // =========================================================
+  //  FOREMAN (mobile)
+  // =========================================================
+  var mtab = "jobs";
+  // draft report state
+  var draft;
+  function freshDraft() {
+    return { job: myJobs()[0].name, crew: 4, hours: 8, weather: "Sunny", delay: false,
+      photos: [false, false, false], materials: [], shortage: false };
+  }
+
+  function renderForeman() {
+    document.getElementById("m-title").textContent =
+      mtab === "jobs" ? "My Jobs" : mtab === "report" ? "New Daily Report" : "Materials";
+    var b = document.getElementById("m-body");
+    if (mtab === "jobs") b.innerHTML = viewJobs();
+    else if (mtab === "report") b.innerHTML = viewReport();
+    else b.innerHTML = viewMaterials();
+    document.querySelectorAll("#m-tabbar button").forEach(function (x) {
+      x.classList.toggle("active", x.getAttribute("data-mtab") === mtab);
+    });
+  }
+
+  function viewJobs() {
+    return '<div class="row" style="margin-bottom:10px"><span class="badge accent">' + myJobs().length + ' assigned</span><span class="spacer small muted">role-scoped to you</span></div>' +
+      myJobs().map(function (j) {
+        var low = j.parts.filter(partLow).length;
+        return '<div class="list-item" data-job="' + j.id + '">' +
+          '<div class="ic">' + FS.initials(j.name) + '</div>' +
+          '<div class="grow"><div class="ti">' + FS.esc(j.name) + '</div>' +
+          '<div class="su">' + j.docs + ' docs · ' + j.change + ' CO' + (low ? ' · <span style="color:var(--bad)">' + low + ' low-stock</span>' : '') + '</div></div>' +
+          statusBadge(j.status) + '</div>';
+      }).join('') +
+      '<p class="small muted" style="margin-top:10px">Tap a job for the rollup.</p>';
+  }
+
+  var MATERIAL_OPTS = ["Wire 12AWG", 'Conduit 3/4"', "20A Breakers"];
+
+  function viewReport() {
+    var opts = myJobs().map(function (j) {
+      return '<option' + (j.name === draft.job ? ' selected' : '') + '>' + FS.esc(j.name) + '</option>';
+    }).join('');
+    var weather = ["Sunny", "Cloudy", "Rain"].map(function (w) {
+      return '<option' + (w === draft.weather ? ' selected' : '') + '>' + w + '</option>';
+    }).join('');
+    var tiles = draft.photos.map(function (on, i) {
+      return '<div class="photo-tile" data-photo="' + i + '" style="flex:1;height:62px;border-radius:9px;display:grid;place-items:center;cursor:pointer;border:1.5px ' +
+        (on ? 'solid var(--accent)' : 'dashed var(--d-border-strong)') + ';background:' + (on ? 'var(--accent-soft)' : 'var(--d-surface-2)') +
+        ';color:' + (on ? 'var(--accent-deep)' : 'var(--d-muted)') + ';font-size:1.4rem">' + (on ? '✓' : '📷') + '</div>';
+    }).join('');
+    var mats = draft.materials.length
+      ? draft.materials.map(function (mt, i) {
+          return '<div class="row" style="padding:6px 0;border-bottom:1px solid var(--d-border)"><span class="grow small"><b>' + FS.esc(mt.name) + '</b> · ' + mt.qty + ' ' + mt.unit + '</span><button class="btn btn-sm btn-ghost" data-rmmat="' + i + '" style="padding:.1rem .5rem">✕</button></div>';
+        }).join('')
+      : '<div class="small muted" style="padding:6px 0">No materials added yet.</div>';
+
+    return '<div class="card card-pad">' +
+      '<div class="field"><label class="lbl">Job</label><select class="inp" id="r-job">' + opts + '</select></div>' +
+      '<div class="grid grid-2"><div class="field"><label class="lbl">Crew size</label>' + counterHtml("crew", draft.crew) + '</div>' +
+      '<div class="field"><label class="lbl">Hours</label>' + counterHtml("hours", draft.hours) + '</div></div>' +
+      '<div class="field"><label class="lbl">Work performed</label><textarea class="inp" id="r-work" rows="3" placeholder="Describe today\'s work…">' + FS.esc(draft.work || '') + '</textarea></div>' +
+      '<div class="grid grid-2"><div class="field"><label class="lbl">Weather</label><select class="inp" id="r-weather">' + weather + '</select></div>' +
+      '<div class="field"><label class="lbl">Delay noted</label>' + toggleHtml("delay", draft.delay) + '</div></div>' +
+      '<div class="field"><label class="lbl">Photos</label><div class="row" style="gap:8px">' + tiles + '</div></div>' +
+      '<div class="field"><label class="lbl">Materials used</label>' +
+        '<div id="r-mats">' + mats + '</div>' +
+        '<div class="row" style="margin-top:8px;gap:8px"><select class="inp" id="r-matsel" style="flex:1">' + MATERIAL_OPTS.map(function (o) { return '<option>' + o + '</option>'; }).join('') + '</select>' +
+        '<button class="btn btn-ghost btn-sm" id="r-addmat">+ add material</button></div>' +
+        '<label class="row small" style="margin-top:8px;cursor:pointer;gap:8px"><input type="checkbox" id="r-shortage"' + (draft.shortage ? ' checked' : '') + '> Flag shortage to office</label>' +
+      '</div>' +
+      '<div class="row" style="margin-top:6px;gap:8px"><button class="btn btn-ghost spacer" id="r-draft">Save draft</button><button class="btn btn-primary" id="r-submit">Submit report</button></div>' +
+      '</div>' +
+      '<p class="small muted" style="margin-top:10px;text-align:center">⟳ Reports queue locally and sync when you regain signal.</p>';
+  }
+
+  function counterHtml(key, val) {
+    return '<div class="counter" data-counter="' + key + '"><button data-step="-1">–</button><span class="val">' + val + '</span><button data-step="1">+</button></div>';
+  }
+  function toggleHtml(key, on) {
+    return '<button class="btn btn-sm ' + (on ? 'btn-primary' : 'btn-ghost') + '" data-toggle="' + key + '" style="width:100%;justify-content:center">' + (on ? 'Yes — delay' : 'No delay') + '</button>';
+  }
+
+  function viewMaterials() {
+    return myJobs().map(function (j) {
+      return '<div class="card card-pad" style="margin-bottom:10px"><div class="row"><div class="ti">' + FS.esc(j.name) + '</div>' + statusBadge(j.status) + '</div>' +
+        '<table class="t" style="margin-top:8px;font-size:.84rem"><thead><tr><th>Part</th><th class="num">Est</th><th class="num">Used</th><th class="num">Left</th></tr></thead><tbody>' +
+        j.parts.map(function (p) {
+          var low = partLow(p);
+          return '<tr' + (low ? ' class="is-bad"' : '') + '><td>' + FS.esc(p.p) + (low ? ' <span class="badge bad" style="padding:.05rem .35rem">low</span>' : '') + '</td><td class="num">' + p.est + '</td><td class="num">' + p.used + '</td><td class="num"><b>' + partRemaining(p) + '</b></td></tr>';
+        }).join('') + '</tbody></table></div>';
+    }).join('');
+  }
+
+  // foreman job rollup drawer
+  function openJob(id) {
+    var j = DB.jobs.find(function (x) { return x.id === id; });
+    if (!j) return;
+    var reports = DB.queue.filter(function (r) { return r.job === j.name; }).length;
+    var low = j.parts.filter(partLow).length;
+    document.getElementById("dr-title").textContent = j.name;
+    document.getElementById("dr-body").innerHTML =
+      '<div class="row" style="margin-bottom:12px">' + statusBadge(j.status) + '<span class="spacer small muted">Foreman · ' + FS.esc(j.foreman) + '</span></div>' +
+      '<div class="grid grid-2"><div class="stat"><div class="label">Reports submitted</div><div class="value">' + reports + '</div></div>' +
+      '<div class="stat"><div class="label">Documents</div><div class="value">' + j.docs + '</div></div>' +
+      '<div class="stat"><div class="label">Change orders</div><div class="value">' + j.change + '</div></div>' +
+      '<div class="stat"><div class="label">Low-stock parts</div><div class="value" style="color:' + (low ? 'var(--bad)' : 'inherit') + '">' + low + '</div></div></div>' +
+      '<p class="section-title" style="font-size:.95rem">Parts</p>' +
+      '<table class="t"><thead><tr><th>Part</th><th class="num">Est</th><th class="num">Used</th><th class="num">Left</th></tr></thead><tbody>' +
+      j.parts.map(function (p) {
+        var lw = partLow(p);
+        return '<tr' + (lw ? ' class="is-bad"' : '') + '><td>' + FS.esc(p.p) + '</td><td class="num">' + p.est + '</td><td class="num">' + p.used + '</td><td class="num"><b>' + partRemaining(p) + '</b></td></tr>';
+      }).join('') + '</tbody></table>' +
+      '<button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:14px" id="dr-newreport">+ New report for this job</button>';
+    FS.openDrawer("drawer");
+  }
+
+  // =========================================================
+  //  OFFICE ADMIN (desktop)
+  // =========================================================
+  function renderAdmin() {
+    document.getElementById("kpi-queue").textContent = DB.queue.length;
+    document.getElementById("kpi-jobs").textContent = DB.jobs.length;
+    document.getElementById("kpi-co").textContent = DB.jobs.reduce(function (a, j) { return a + j.change; }, 0);
+    var low = 0; DB.jobs.forEach(function (j) { low += j.parts.filter(partLow).length; });
+    document.getElementById("kpi-low").textContent = low;
+    document.getElementById("queue-num").textContent = DB.queue.length;
+    renderQueue();
+    renderJobs();
+    renderDocFilters();
+    renderDocs();
+  }
+
+  function pill(on, label) {
+    return '<span class="badge ' + (on ? 'ok' : 'muted') + '" style="padding:.12rem .45rem">' + (on ? '✓ ' : '– ') + label + '</span>';
+  }
+  function renderQueue() {
+    var tb = document.getElementById("queue-rows");
+    if (!DB.queue.length) { tb.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center;padding:22px">Queue clear — all reports reviewed. ✓</td></tr>'; return; }
+    tb.innerHTML = DB.queue.map(function (r) {
+      return '<tr class="clickable" data-report="' + r.id + '"><td><b>' + FS.esc(r.foreman) + '</b></td><td>' + FS.esc(r.job) + '</td><td>' + r.date + '</td>' +
+        '<td><div class="row wrap" style="gap:5px">' + pill(r.photos > 0, r.photos + ' photos') + pill(r.delay, 'delay') + pill(r.offline, 'synced offline') + '</div></td>' +
+        '<td class="num"><button class="btn btn-ghost btn-sm" data-report="' + r.id + '">Review →</button></td></tr>';
+    }).join('');
+  }
+  function renderJobs() {
+    document.getElementById("jobs-rows").innerHTML = DB.jobs.map(function (j) {
+      var reports = DB.queue.filter(function (r) { return r.job === j.name; }).length;
+      return '<tr><td><b>' + FS.esc(j.name) + '</b></td><td>' + statusBadge(j.status) + '</td><td>' + FS.esc(j.foreman) + '</td><td class="num">' + reports + '</td><td class="num">' + j.change + '</td></tr>';
+    }).join('');
+  }
+  function renderDocFilters() {
+    var sel = document.getElementById("doc-job");
+    if (sel.options.length > 1) return;
+    var names = DB.jobs.map(function (j) { return j.name; });
+    names.filter(function (n, i) { return names.indexOf(n) === i; }).forEach(function (n) {
+      var o = document.createElement("option"); o.textContent = n; sel.appendChild(o);
+    });
+  }
+  function docTypeBadge(t) {
+    var c = { "Bid Docs":"muted", "Plans":"info", "Submittals":"accent", "RFIs":"warn", "Change Orders":"ok", "Permits":"bad" }[t] || "muted";
+    return '<span class="badge ' + c + '">' + t + '</span>';
+  }
+  function renderDocs() {
+    var fj = document.getElementById("doc-job").value, ft = document.getElementById("doc-type").value;
+    var rows = DB.docs.filter(function (d) { return (!fj || d.job === fj) && (!ft || d.type === ft); });
+    var tb = document.getElementById("docs-rows");
+    tb.innerHTML = rows.length ? rows.map(function (d) {
+      return '<tr><td><b>' + FS.esc(d.name) + '</b></td><td>' + docTypeBadge(d.type) + '</td><td>' + FS.esc(d.job) + '</td><td>' + d.date + '</td><td class="num">' + d.size + '</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="muted" style="text-align:center;padding:18px">No documents match the filter.</td></tr>';
+  }
+
+  // review report drawer
+  function openReport(id) {
+    var r = DB.queue.find(function (x) { return x.id === id; });
+    if (!r) return;
+    document.getElementById("dr-title").textContent = "Report " + r.id;
+    document.getElementById("dr-body").innerHTML =
+      '<div class="row" style="margin-bottom:10px"><span class="badge info">' + FS.esc(r.foreman) + '</span><span class="spacer small muted">' + FS.esc(r.job) + ' · ' + r.date + '</span></div>' +
+      '<div class="grid grid-2"><div class="stat"><div class="label">Crew size</div><div class="value">' + r.crew + '</div></div>' +
+      '<div class="stat"><div class="label">Hours</div><div class="value">' + r.hours + '</div></div></div>' +
+      '<p class="section-title" style="font-size:.95rem">Work performed</p><p class="small">' + FS.esc(r.work) + '</p>' +
+      '<div class="row wrap" style="gap:6px;margin:10px 0">' + pill(r.photos > 0, r.photos + ' photos') + pill(r.delay, 'delay noted') + pill(r.offline, 'synced offline') + '<span class="badge muted">' + r.weather + '</span></div>' +
+      '<p class="section-title" style="font-size:.95rem">Sign-off note</p>' +
+      '<textarea class="inp" id="rv-note" rows="2" placeholder="Optional note to the foreman…"></textarea>' +
+      '<button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px" data-markreviewed="' + r.id + '">✓ Mark reviewed</button>';
+    FS.openDrawer("drawer");
+  }
+
+  function markReviewed(id) {
+    DB.queue = DB.queue.filter(function (x) { return x.id !== id; });
+    FS.closeDrawer();
+    FS.toast("Report " + id + " reviewed · removed from queue");
+    renderAdmin();
+  }
+
+  // ---------- Change orders (live totals) ----------
+  function renderCO() {
+    var tb = document.getElementById("co-rows");
+    tb.innerHTML = DB.coLines.map(function (l, i) {
+      var types = ["material", "labor", "equipment", "sub"].map(function (t) {
+        return '<option' + (t === l.type ? ' selected' : '') + '>' + t + '</option>';
+      }).join('');
+      return '<tr><td><input class="inp" data-co="desc" data-i="' + i + '" value="' + FS.esc(l.desc) + '"></td>' +
+        '<td><select class="inp" data-co="type" data-i="' + i + '" style="width:auto">' + types + '</select></td>' +
+        '<td class="num"><input class="inp" type="number" data-co="qty" data-i="' + i + '" value="' + l.qty + '" style="width:80px;text-align:right"></td>' +
+        '<td class="num"><input class="inp" type="number" data-co="unit" data-i="' + i + '" value="' + l.unit + '" step="0.01" style="width:96px;text-align:right"></td>' +
+        '<td class="num"><b>' + m(l.qty * l.unit) + '</b></td>' +
+        '<td class="num"><button class="btn btn-sm btn-ghost" data-coremove="' + i + '" style="padding:.1rem .5rem">✕</button></td></tr>';
+    }).join('');
+    recalcCO();
+  }
+  function recalcCO() {
+    var sub = DB.coLines.reduce(function (a, l) { return a + l.qty * l.unit; }, 0);
+    var mk = parseFloat(document.getElementById("co-markup").value) || 0;
+    var tx = parseFloat(document.getElementById("co-tax").value) || 0;
+    var mkAmt = sub * mk / 100;
+    var taxAmt = (sub + mkAmt) * tx / 100;
+    var grand = sub + mkAmt + taxAmt;
+    document.getElementById("co-subtotal").textContent = m(sub);
+    document.getElementById("co-markup-lbl").textContent = mk + "%";
+    document.getElementById("co-tax-lbl").textContent = tx + "%";
+    document.getElementById("co-markup-amt").textContent = m(mkAmt);
+    document.getElementById("co-tax-amt").textContent = m(taxAmt);
+    document.getElementById("co-grand").textContent = m(grand);
+  }
+
+  // =========================================================
+  //  Role switching
+  // =========================================================
+  function setRole(role) {
+    var foreman = role === "foreman";
+    document.getElementById("view-foreman").style.display = foreman ? "" : "none";
+    document.getElementById("view-admin").style.display = foreman ? "none" : "";
+    document.getElementById("role-av").textContent = foreman ? "MR" : "OA";
+    document.getElementById("hdr-sub").textContent = foreman
+      ? "Daily reports · materials · per-job parts"
+      : "Review queue · jobs · documents · change orders";
+    if (foreman) renderForeman();
+    else { renderAdmin(); renderCO(); }
+  }
+
+  // =========================================================
+  //  Events
+  // =========================================================
+  document.getElementById("role").addEventListener("change", function (e) { FS.closeDrawer(); setRole(e.target.value === "foreman" ? "foreman" : "admin"); });
+
+  document.addEventListener("click", function (e) {
+    // mobile tab bar
+    var mt = e.target.closest("[data-mtab]");
+    if (mt) { mtab = mt.getAttribute("data-mtab"); if (mtab === "report") draft = freshDraft(); renderForeman(); return; }
+
+    // foreman job rollup
+    var jb = e.target.closest("[data-job]");
+    if (jb) { openJob(jb.getAttribute("data-job")); return; }
+    if (e.target.id === "dr-newreport") { FS.closeDrawer(); mtab = "report"; draft = freshDraft(); renderForeman(); return; }
+
+    // counter steppers
+    var step = e.target.closest("[data-step]");
+    if (step) {
+      var ctr = step.closest("[data-counter]"); var key = ctr.getAttribute("data-counter");
+      var d = parseInt(step.getAttribute("data-step"), 10);
+      draft[key] = Math.max(0, draft[key] + d);
+      ctr.querySelector(".val").textContent = draft[key];
+      return;
+    }
+    // delay toggle
+    var tg = e.target.closest("[data-toggle]");
+    if (tg) { draft.delay = !draft.delay; tg.outerHTML = toggleHtml("delay", draft.delay); return; }
+
+    // photo tiles
+    var ph = e.target.closest("[data-photo]");
+    if (ph) {
+      var pi = +ph.getAttribute("data-photo"); draft.photos[pi] = !draft.photos[pi];
+      syncDraftInputs(); renderForeman(); FS.toast(draft.photos[pi] ? "Photo captured ✓" : "Photo removed"); return;
+    }
+    // add material
+    if (e.target.id === "r-addmat") {
+      var sel = document.getElementById("r-matsel"); var name = sel.value;
+      var unit = name.indexOf("Wire") === 0 || name.indexOf("Conduit") === 0 ? "ft" : "ea";
+      var qty = unit === "ft" ? 250 : 6;
+      syncDraftInputs(); draft.materials.push({ name: name, qty: qty, unit: unit });
+      renderForeman(); FS.toast(name + " added"); return;
+    }
+    var rm = e.target.closest("[data-rmmat]");
+    if (rm) { syncDraftInputs(); draft.materials.splice(+rm.getAttribute("data-rmmat"), 1); renderForeman(); return; }
+
+    // save draft / submit
+    if (e.target.id === "r-draft") { syncDraftInputs(); FS.toast("Draft saved locally"); return; }
+    if (e.target.id === "r-submit") { submitReport(); return; }
+
+    // admin: review report
+    var rep = e.target.closest("[data-report]");
+    if (rep) { openReport(rep.getAttribute("data-report")); return; }
+    var mr = e.target.closest("[data-markreviewed]");
+    if (mr) { markReviewed(mr.getAttribute("data-markreviewed")); return; }
+
+    // admin: docs upload
+    if (e.target.id === "doc-upload") { FS.toast("Document uploaded · indexed by job & type"); return; }
+
+    // admin: change order add/remove
+    if (e.target.id === "co-add") { DB.coLines.push({ desc: "New line item", type: "material", qty: 1, unit: 0 }); renderCO(); return; }
+    var cr = e.target.closest("[data-coremove]");
+    if (cr) { DB.coLines.splice(+cr.getAttribute("data-coremove"), 1); renderCO(); return; }
+    if (e.target.id === "co-pdf") { FS.toast("Branded change order PDF generated"); return; }
+  });
+
+  // keep draft state in sync with text inputs/selects before re-render
+  function syncDraftInputs() {
+    var j = document.getElementById("r-job"); if (j) draft.job = j.value;
+    var w = document.getElementById("r-work"); if (w) draft.work = w.value;
+    var we = document.getElementById("r-weather"); if (we) draft.weather = we.value;
+    var sh = document.getElementById("r-shortage"); if (sh) draft.shortage = sh.checked;
+  }
+
+  function submitReport() {
+    syncDraftInputs();
+    var photos = draft.photos.filter(Boolean).length;
+    var id = "R-" + (1043 + Math.floor(Math.random() * 50));
+    DB.queue.unshift({ id: id, foreman: "Miguel", job: draft.job, date: "Jun 8",
+      crew: draft.crew, hours: draft.hours, weather: draft.weather,
+      work: draft.work || "Daily work logged.", photos: photos, delay: draft.delay, offline: true });
+    draft = freshDraft();
+    mtab = "jobs";
+    renderForeman();
+    FS.toast("Report " + id + " submitted → admin queue");
+  }
+
+  // change-order live inputs
+  document.addEventListener("input", function (e) {
+    var co = e.target.closest("[data-co]");
+    if (co) {
+      var i = +co.getAttribute("data-i"), f = co.getAttribute("data-co");
+      var l = DB.coLines[i]; if (!l) return;
+      if (f === "qty" || f === "unit") l[f] = parseFloat(co.value) || 0;
+      else l[f] = co.value;
+      // update just the row total + footer without full re-render (keep focus)
+      var row = co.closest("tr");
+      if (row) row.querySelector("td:nth-child(5) b").textContent = m(l.qty * l.unit);
+      recalcCO();
+      return;
+    }
+    if (e.target.id === "co-markup" || e.target.id === "co-tax") { recalcCO(); return; }
+  });
+
+  // doc filters
+  document.addEventListener("change", function (e) {
+    if (e.target.id === "doc-job" || e.target.id === "doc-type") renderDocs();
+  });
+
+  // ---------- reset ----------
+  window.resetDemo = function () {
+    DB = seed();
+    document.getElementById("role").value = "foreman";
+    mtab = "jobs"; draft = freshDraft();
+    // reset CO inputs
+    document.getElementById("co-markup").value = 15;
+    document.getElementById("co-tax").value = 8.25;
+    FS.closeDrawer();
+    setRole("foreman");
+    FS.toast("Demo reset");
+  };
+
+  // ---------- init ----------
+  draft = freshDraft();
+  setRole("foreman");
+})();
+</script>
+</body>
+</html>

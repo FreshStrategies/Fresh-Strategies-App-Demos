@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Field‑to‑Cooling Operations — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="ag">
+
+<div class="demo-banner">
+  <a href="../index.html#agriculture">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · live board</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 7h11v8H3z"/><path d="M14 10h4l3 3v2h-7z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Field‑to‑Cooling</div>
+      <div class="app-header__sub" data-i18n="sub">Harvest → transport → receiving → cooling</div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="pill-toggle" id="lang"><button class="active" data-lang="en">EN</button><button data-lang="es">ES</button></div>
+    <div class="switcher" style="margin-left:10px">
+      <span class="avatar" id="role-av">RC</span>
+      <select id="role" class="inp" style="width:auto;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)">
+        <option value="crew">Crew Boss</option>
+        <option value="driver">Driver</option>
+        <option value="receiving" selected>Receiving</option>
+        <option value="cooling">Cooling Operator</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="phone-stage">
+    <div class="phone">
+      <div class="phone__screen">
+        <div class="phone__notch"></div>
+        <div class="m-header">
+          <span class="avatar" id="m-av">RC</span>
+          <div><h3 id="m-title">Receiving Board</h3><div class="small" style="color:rgba(255,255,255,.8)" id="m-role">Receiving</div></div>
+        </div>
+        <div class="m-body" id="m-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="load-drawer">
+  <div class="drawer__head"><h3 style="margin:0" id="ld-title">Load</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body" id="ld-body"></div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  var T = {
+    en: { sub:"Harvest → transport → receiving → cooling", board:"Receiving Board", pickups:"My Pickups", newTicket:"New Field Ticket", cooling:"Cooling Cycles", overview:"Overview", validate:"Validate load", advance:"Advance", claim:"Claim load", depart:"Mark departed", arrive:"Mark arrived", bins:"bins", commodity:"Commodity", block:"Block", truck:"Truck", create:"Create ticket", history:"Status history", custom:"Custom‑cooling receipt", sign:"Tap to sign", emailpdf:"Email PDF receipt" },
+    es: { sub:"Cosecha → transporte → recibo → enfriado", board:"Tablero de Recibo", pickups:"Mis Recogidas", newTicket:"Nuevo Ticket de Campo", cooling:"Ciclos de Enfriado", overview:"Resumen", validate:"Validar carga", advance:"Avanzar", claim:"Reclamar carga", depart:"Marcar salida", arrive:"Marcar llegada", bins:"cajones", commodity:"Producto", block:"Bloque", truck:"Camión", create:"Crear ticket", history:"Historial de estado", custom:"Recibo de enfriado", sign:"Toque para firmar", emailpdf:"Enviar recibo PDF" }
+  };
+  var lang = "en";
+  function t(k){ return T[lang][k] || k; }
+
+  var STATUSES = ["HARVESTING","CLAIMED","DEPARTED","ARRIVED","AT_RECEIVING","VALIDATED","COOLING","COOLING_COMPLETE"];
+  var STATUS_LABEL = { HARVESTING:"Harvesting", CLAIMED:"Claimed", DEPARTED:"In transit", ARRIVED:"Arrived", AT_RECEIVING:"At receiving", VALIDATED:"Validated", COOLING:"Cooling", COOLING_COMPLETE:"Cooling complete" };
+  function statusClass(s){ return s==="COOLING_COMPLETE"?"ok": s==="VALIDATED"||s==="COOLING"?"info": s==="HARVESTING"?"muted":"warn"; }
+
+  var seed = function () { return [
+    { id:"L‑2041", commodity:"Romaine", block:"North 12", truck:"T‑7", bins:42, status:"AT_RECEIVING", driver:"A. Rivera", hist:[["Harvesting","6:12a"],["Claimed by A. Rivera","6:40a"],["Departed","6:58a"],["Arrived","7:31a"],["At receiving","7:33a"]] },
+    { id:"L‑2042", commodity:"Broccoli", block:"South 04", truck:"T‑3", bins:38, status:"DEPARTED", driver:"M. Soto", hist:[["Harvesting","6:20a"],["Claimed by M. Soto","6:51a"],["Departed","7:10a"]] },
+    { id:"L‑2043", commodity:"Iceberg", block:"East 09", truck:"T‑9", bins:45, status:"VALIDATED", driver:"A. Rivera", hist:[["...","—"],["Validated · 45 bins confirmed","7:50a"]] },
+    { id:"L‑2044", commodity:"Artichoke", block:"West 02", truck:"—", bins:30, status:"HARVESTING", driver:null, hist:[["Harvesting","7:05a"]] },
+    { id:"L‑2045", commodity:"Romaine", block:"North 14", truck:"T‑5", bins:40, status:"COOLING", driver:"J. Kim", hist:[["Validated","7:20a"],["Cooling cycle C‑8","7:40a"]] }
+  ]; };
+  var loads = seed();
+
+  function badge(s){ return '<span class="badge '+statusClass(s)+'">'+STATUS_LABEL[s]+'</span>'; }
+  function nextOf(s){ var i=STATUSES.indexOf(s); return STATUSES[Math.min(i+1,STATUSES.length-1)]; }
+
+  // ---------- Role views ----------
+  var ROLE_META = { crew:["RC","Crew Boss","newTicket"], driver:["DR","Driver","pickups"], receiving:["RC","Receiving","board"], cooling:["CO","Cooling Operator","cooling"], admin:["AD","Admin","overview"] };
+
+  function render() {
+    var role = document.getElementById("role").value;
+    var meta = ROLE_META[role];
+    document.getElementById("role-av").textContent = meta[0];
+    document.getElementById("m-av").textContent = meta[0];
+    document.getElementById("m-role").textContent = meta[1];
+    document.getElementById("m-title").textContent = t(meta[2]);
+    var body = document.getElementById("m-body");
+    if (role === "receiving") body.innerHTML = viewBoard();
+    else if (role === "driver") body.innerHTML = viewDriver();
+    else if (role === "crew") body.innerHTML = viewCrew();
+    else if (role === "cooling") body.innerHTML = viewCooling();
+    else body.innerHTML = viewAdmin();
+  }
+
+  function loadItem(l, sub) {
+    return '<div class="list-item" data-load="'+l.id+'"><div class="ic">'+ FS.initials(l.commodity) +'</div>' +
+      '<div class="grow"><div class="ti">'+l.id+' · '+l.commodity+'</div><div class="su">'+(sub||(l.block+' · '+l.bins+' '+t('bins')))+'</div></div>'+badge(l.status)+'</div>';
+  }
+
+  function viewBoard() {
+    var live = loads.filter(function(l){ return ["DEPARTED","ARRIVED","AT_RECEIVING","VALIDATED"].indexOf(l.status)>=0; });
+    return '<div class="row" style="margin-bottom:10px"><span class="badge accent">'+live.length+' active</span><span class="spacer small muted">auto‑refresh ●</span></div>' +
+      live.map(function(l){ return loadItem(l); }).join('') +
+      '<p class="small muted" style="margin-top:10px">Tap a load to validate or correct quantities.</p>';
+  }
+  function viewDriver() {
+    var mine = loads.filter(function(l){ return ["HARVESTING","CLAIMED","DEPARTED"].indexOf(l.status)>=0; });
+    return mine.map(function(l){
+      var cta = l.status==="HARVESTING" ? t('claim') : l.status==="CLAIMED" ? t('depart') : t('arrive');
+      return '<div class="card card-pad" style="margin-bottom:10px"><div class="row"><div class="ti">'+l.id+' · '+l.commodity+'</div>'+badge(l.status)+'</div>'+
+        '<div class="su small muted">'+l.block+' · '+l.bins+' '+t('bins')+(l.truck!=="—"?' · '+l.truck:'')+'</div>'+
+        '<button class="btn btn-primary btn-sm" style="margin-top:10px" data-advance="'+l.id+'">'+cta+' →</button></div>';
+    }).join('');
+  }
+  function viewCrew() {
+    return '<div class="card card-pad">'+
+      '<div class="field"><label class="lbl">'+t('commodity')+'</label><select class="inp"><option>Romaine</option><option>Broccoli</option><option>Iceberg</option><option>Artichoke</option></select></div>'+
+      '<div class="field"><label class="lbl">'+t('block')+'</label><select class="inp"><option>North 12</option><option>South 04</option><option>East 09</option><option>West 02</option></select></div>'+
+      '<div class="grid grid-2"><div class="field"><label class="lbl">'+t('truck')+'</label><input class="inp" value="T‑7"></div>'+
+      '<div class="field"><label class="lbl">'+t('bins')+'</label><input class="inp" type="number" value="42"></div></div>'+
+      '<button class="btn btn-primary" style="width:100%;justify-content:center" data-newticket>'+t('create')+'</button></div>'+
+      '<p class="section-title" style="font-size:.95rem">Recent</p>'+ loads.slice(0,2).map(function(l){return loadItem(l);}).join('');
+  }
+  function viewCooling() {
+    return '<div class="card card-pad" style="margin-bottom:10px"><div class="row"><div class="ti">Cycle C‑8</div><span class="badge info">Running</span></div>'+
+      '<div class="small muted" style="margin:6px 0">2 loads assigned · pre‑temp 38°F</div>'+
+      '<div class="progress"><i style="width:64%"></i></div>'+
+      '<div class="row" style="margin-top:12px"><button class="btn btn-ghost btn-sm" data-scan>📷 Scan to assign</button><button class="btn btn-primary btn-sm spacer" data-complete>Complete cycle</button></div></div>'+
+      '<div class="card card-pad"><div class="ti">Awaiting cooling</div>'+
+      loads.filter(function(l){return l.status==="VALIDATED";}).map(function(l){return '<div class="list-item" data-load="'+l.id+'" style="margin-top:8px"><div class="ic">'+FS.initials(l.commodity)+'</div><div class="grow"><div class="ti">'+l.id+'</div><div class="su">'+l.bins+' '+t('bins')+'</div></div><span class="badge info">Validated</span></div>';}).join('')+'</div>';
+  }
+  function viewAdmin() {
+    var counts = {}; loads.forEach(function(l){ counts[l.status]=(counts[l.status]||0)+1; });
+    return '<div class="grid grid-2"><div class="stat"><div class="label">Active loads</div><div class="value">'+loads.length+'</div></div>'+
+      '<div class="stat"><div class="label">Bins today</div><div class="value">'+loads.reduce(function(a,l){return a+l.bins;},0)+'</div></div></div>'+
+      '<p class="section-title" style="font-size:.95rem">'+t('custom')+'</p>'+
+      '<div class="card card-pad"><div class="row"><div class="ti">Receipt CC‑118</div><span class="badge ok">Ready</span></div>'+
+      '<table class="t" style="margin-top:8px"><tr><td>Romaine · 40 bins</td><td class="num">$1.85/bin</td></tr><tr><td>Cooling hours</td><td class="num">$120.00</td></tr><tr style="font-weight:700;background:var(--d-surface-2)"><td>Total</td><td class="num">$194.00</td></tr></table>'+
+      '<div class="sigpad" style="margin-top:10px" data-sign>'+t('sign')+'</div>'+
+      '<button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px" data-emailpdf>'+t('emailpdf')+'</button></div>';
+  }
+
+  // ---------- Load detail drawer ----------
+  function openLoad(id) {
+    var l = loads.find(function(x){return x.id===id;});
+    if (!l) return;
+    document.getElementById("ld-title").textContent = l.id + " · " + l.commodity;
+    var canAdvance = l.status !== "COOLING_COMPLETE";
+    document.getElementById("ld-body").innerHTML =
+      '<div class="row" style="margin-bottom:12px">'+badge(l.status)+'<span class="spacer small muted">'+l.block+' · '+l.bins+' '+t('bins')+(l.driver?' · '+l.driver:'')+'</span></div>'+
+      '<p class="section-title" style="font-size:.95rem;margin-top:0">'+t('history')+'</p>'+
+      '<ul class="timeline">'+ l.hist.map(function(h,i){return '<li class="done"><span class="node"></span><div class="tl-t">'+h[0]+'</div><div class="tl-s">'+h[1]+'</div></li>';}).join('') +
+        '<li class="pending"><span class="node"></span><div class="tl-t muted">'+STATUS_LABEL[nextOf(l.status)]+'</div><div class="tl-s">next</div></li></ul>'+
+      (canAdvance ? '<button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" data-advance="'+l.id+'">'+(l.status==="AT_RECEIVING"?t('validate'):t('advance'))+' → '+STATUS_LABEL[nextOf(l.status)]+'</button>' : '<div class="badge ok" style="width:100%;justify-content:center;padding:.6rem">✓ '+STATUS_LABEL[l.status]+'</div>') +
+      '<button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:8px" data-correct="'+l.id+'">✎ Quantity correction</button>';
+    FS.openDrawer("load-drawer");
+  }
+
+  function advance(id) {
+    var l = loads.find(function(x){return x.id===id;});
+    if (!l) return;
+    var ns = nextOf(l.status);
+    l.status = ns;
+    l.hist.push([STATUS_LABEL[ns] + (ns==="CLAIMED"?" by A. Rivera":""), "now"]);
+    FS.toast(l.id + " → " + STATUS_LABEL[ns]);
+    render();
+    if (document.getElementById("load-drawer").classList.contains("open")) openLoad(id);
+  }
+
+  // ---------- Events ----------
+  document.getElementById("role").addEventListener("change", render);
+  document.getElementById("lang").addEventListener("click", function(e){
+    var b = e.target.closest("[data-lang]"); if(!b) return;
+    lang = b.getAttribute("data-lang");
+    document.querySelectorAll("#lang button").forEach(function(x){x.classList.toggle("active", x===b);});
+    document.querySelector('[data-i18n="sub"]').textContent = t('sub');
+    render();
+  });
+  document.addEventListener("click", function (e) {
+    var adv = e.target.closest("[data-advance]"); if (adv) { advance(adv.getAttribute("data-advance")); return; }
+    var li = e.target.closest("[data-load]"); if (li) { openLoad(li.getAttribute("data-load")); return; }
+    if (e.target.closest("[data-newticket]")) { var l={id:"L‑20"+(46+Math.floor(loads.length)),commodity:"Romaine",block:"North 12",truck:"T‑7",bins:42,status:"HARVESTING",driver:null,hist:[["Harvesting","now"]]}; loads.unshift(l); FS.toast("Field ticket "+l.id+" created"); render(); }
+    if (e.target.closest("[data-complete]")) { loads.forEach(function(l){ if(l.status==="COOLING"){l.status="COOLING_COMPLETE"; l.hist.push(["Cooling complete","now"]);} }); FS.toast("Cycle complete · loads advanced"); render(); }
+    if (e.target.closest("[data-scan]")) FS.toast("📷 Code‑39 scanned · load assigned");
+    if (e.target.closest("[data-sign]")) { e.target.closest("[data-sign]").innerHTML = '<b style="font-style:normal;color:var(--accent-deep)">✓ Signed</b>'; FS.toast("Signature captured"); }
+    if (e.target.closest("[data-emailpdf]")) FS.toast("PDF receipt generated & emailed");
+    if (e.target.closest("[data-correct]")) FS.toast("Correction logged (append‑only)");
+  });
+
+  window.resetDemo = function(){ loads = seed(); document.getElementById("role").value="receiving"; FS.closeDrawer(); render(); FS.toast("Demo reset"); };
+  render();
+})();
+</script>
+</body>
+</html>

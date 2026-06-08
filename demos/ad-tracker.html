@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Promo &amp; Ad-Group Tracker — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="ag">
+
+<div class="demo-banner">
+  <a href="../index.html#agriculture">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional customers</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 21v-6h6v6"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Promo &amp; Ad-Group Tracker</div>
+      <div class="app-header__sub">Sales Operations · replaces scattered promo spreadsheets</div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <div class="avatar">AR</div>
+      <span class="small" style="color:rgba(255,255,255,.85)">Alex Rivera</span>
+    </div>
+  </header>
+
+  <!-- STAT TILES -->
+  <div class="grid grid-4" style="margin-top:18px">
+    <div class="stat"><div class="label">Active ad groups</div><div class="value" id="kpi-active"></div><div class="delta up" id="kpi-active-d"></div></div>
+    <div class="stat"><div class="label">Product lines</div><div class="value" id="kpi-lines"></div></div>
+    <div class="stat"><div class="label">Customers</div><div class="value" id="kpi-cust"></div></div>
+    <div class="stat"><div class="label">Est. promo value</div><div class="value" id="kpi-value"></div></div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="card card-pad" style="margin-top:16px">
+    <div class="row wrap">
+      <input class="inp" id="f-text" placeholder="🔍 Filter campaign or customer…" style="width:auto;flex:1;min-width:180px" />
+      <select class="inp" id="f-cust" style="width:auto"><option value="">All customers</option></select>
+      <select class="inp" id="f-life" style="width:auto">
+        <option value="">All lifecycles</option>
+        <option value="Upcoming">Upcoming</option>
+        <option value="Active">Active</option>
+        <option value="Ended">Ended</option>
+      </select>
+      <label class="row small" style="gap:6px;cursor:pointer;white-space:nowrap">
+        <input type="checkbox" id="f-group" /> Group by customer
+      </label>
+      <span class="spacer"></span>
+      <button class="btn btn-ghost btn-sm" id="exp-csv">⬇ Export CSV</button>
+      <button class="btn btn-ghost btn-sm" id="exp-pdf">⬇ Export PDF</button>
+      <button class="btn btn-primary btn-sm" id="new-ag">+ New ad group</button>
+    </div>
+  </div>
+
+  <!-- MAIN TABLE -->
+  <div class="table-wrap" style="margin-top:16px">
+    <table class="t" id="ag-table">
+      <thead>
+        <tr>
+          <th>Lifecycle</th>
+          <th>Customer</th>
+          <th>Campaign</th>
+          <th class="num">Lines</th>
+          <th>Cadence</th>
+          <th>Start</th>
+          <th>End</th>
+          <th class="num">Est. value</th>
+        </tr>
+      </thead>
+      <tbody id="ag-rows"></tbody>
+    </table>
+  </div>
+  <p class="small muted" id="ag-empty" style="display:none;text-align:center;padding:24px">No ad groups match these filters.</p>
+</div>
+
+<!-- DRAWERS -->
+<div class="drawer-back" id="drawer-back"></div>
+
+<!-- Detail drawer -->
+<aside class="drawer" id="detail-drawer">
+  <div class="drawer__head"><h3 style="margin:0" id="dd-title">Ad group</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body" id="dd-body"></div>
+</aside>
+
+<!-- Create drawer -->
+<aside class="drawer" id="create-drawer">
+  <div class="drawer__head"><h3 style="margin:0">New ad group</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body">
+    <div class="field">
+      <label class="lbl">Customer</label>
+      <select class="inp" id="c-cust"></select>
+    </div>
+    <div class="field">
+      <label class="lbl">Campaign</label>
+      <input class="inp" id="c-camp" placeholder="e.g. Fall Harvest Push" />
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label class="lbl">Lifecycle</label>
+        <select class="inp" id="c-life"><option>Upcoming</option><option>Active</option><option>Ended</option></select>
+      </div>
+      <div class="field">
+        <label class="lbl">Cadence</label>
+        <select class="inp" id="c-cad"><option>Weekly</option><option>Biweekly</option></select>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label class="lbl">Start</label>
+        <input class="inp" id="c-start" type="date" />
+      </div>
+      <div class="field">
+        <label class="lbl">End</label>
+        <input class="inp" id="c-end" type="date" />
+      </div>
+    </div>
+
+    <div class="row" style="margin:6px 0 8px">
+      <h4 style="margin:0">Product lines</h4>
+      <button class="btn btn-ghost btn-sm spacer" id="c-addline">+ Add line</button>
+    </div>
+    <div class="table-wrap" style="box-shadow:none">
+      <table class="t">
+        <thead><tr><th>Product</th><th class="num" style="width:64px">Qty</th><th class="num" style="width:90px">Price</th></tr></thead>
+        <tbody id="c-lines"></tbody>
+      </table>
+    </div>
+    <p class="help">Add 1–3 product lines. Line total feeds the est. promo value.</p>
+
+    <div class="row" style="margin-top:18px">
+      <button class="btn btn-ghost" data-drawer-close>Cancel</button>
+      <button class="btn btn-primary spacer" id="c-save">Save ad group</button>
+    </div>
+  </div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  var m = FS.money, m0 = FS.money0, esc = FS.esc;
+
+  // ---------- Seed data (fictional) ----------
+  var CUSTOMERS = ["Coastal Foods", "Harbor Markets", "Greenline Distributors", "Metro Produce", "Sunbelt Grocers"];
+  var PRODUCTS = ["Romaine 24ct", "Broccoli Crowns", "Artichoke 18ct", "Spinach 4x2.5lb", "Celery 30ct"];
+
+  function lines(arr) { return arr.map(function (l) { return { product: l[0], qty: l[1], price: l[2] }; }); }
+
+  var SEED = [
+    { id: 1, cust: "Coastal Foods", camp: "Spring Greens", life: "Active", cad: "Weekly", start: "2026-05-04", end: "2026-07-13",
+      lines: lines([["Romaine 24ct", 480, 18.50], ["Spinach 4x2.5lb", 220, 26.00], ["Celery 30ct", 160, 21.75]]) },
+    { id: 2, cust: "Harbor Markets", camp: "Summer Melon Push", life: "Upcoming", cad: "Biweekly", start: "2026-06-22", end: "2026-08-31",
+      lines: lines([["Broccoli Crowns", 300, 22.40], ["Artichoke 18ct", 140, 31.00]]) },
+    { id: 3, cust: "Greenline Distributors", camp: "Holiday Veg", life: "Upcoming", cad: "Weekly", start: "2026-11-02", end: "2026-12-28",
+      lines: lines([["Celery 30ct", 520, 20.90], ["Romaine 24ct", 410, 17.95], ["Broccoli Crowns", 280, 23.10], ["Spinach 4x2.5lb", 190, 25.50]]) },
+    { id: 4, cust: "Metro Produce", camp: "Back-to-School", life: "Active", cad: "Weekly", start: "2026-05-18", end: "2026-09-07",
+      lines: lines([["Spinach 4x2.5lb", 360, 24.80], ["Romaine 24ct", 290, 18.10]]) },
+    { id: 5, cust: "Sunbelt Grocers", camp: "Spring Greens", life: "Ended", cad: "Biweekly", start: "2026-02-09", end: "2026-04-20",
+      lines: lines([["Artichoke 18ct", 180, 29.75], ["Broccoli Crowns", 240, 21.60], ["Celery 30ct", 200, 19.40]]) },
+    { id: 6, cust: "Coastal Foods", camp: "Summer Melon Push", life: "Upcoming", cad: "Weekly", start: "2026-06-15", end: "2026-08-24",
+      lines: lines([["Broccoli Crowns", 330, 22.90], ["Celery 30ct", 175, 20.10]]) },
+    { id: 7, cust: "Harbor Markets", camp: "Holiday Veg", life: "Active", cad: "Biweekly", start: "2026-05-25", end: "2026-07-06",
+      lines: lines([["Romaine 24ct", 410, 18.25], ["Artichoke 18ct", 120, 30.50], ["Spinach 4x2.5lb", 260, 25.20]]) },
+    { id: 8, cust: "Metro Produce", camp: "Spring Greens", life: "Ended", cad: "Weekly", start: "2026-01-12", end: "2026-03-23",
+      lines: lines([["Celery 30ct", 300, 19.95], ["Broccoli Crowns", 260, 21.00]]) }
+  ];
+
+  var data = [];
+  var nextId = 100;
+
+  function clone(seed) {
+    return seed.map(function (g) {
+      return {
+        id: g.id, cust: g.cust, camp: g.camp, life: g.life, cad: g.cad, start: g.start, end: g.end,
+        lines: g.lines.map(function (l) { return { product: l.product, qty: l.qty, price: l.price }; })
+      };
+    });
+  }
+
+  var LIFE_BADGE = { Upcoming: "info", Active: "ok", Ended: "muted" };
+
+  function groupValue(g) { return g.lines.reduce(function (s, l) { return s + l.qty * l.price; }, 0); }
+  function fmtDate(d) {
+    var p = d.split("-"); var mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return mo[+p[1] - 1] + " " + (+p[2]) + ", " + p[0];
+  }
+
+  // ---------- KPIs ----------
+  function renderKPIs() {
+    var active = data.filter(function (g) { return g.life === "Active"; }).length;
+    var totalLines = data.reduce(function (s, g) { return s + g.lines.length; }, 0);
+    var custs = {};
+    data.forEach(function (g) { custs[g.cust] = 1; });
+    var val = data.reduce(function (s, g) { return s + groupValue(g); }, 0);
+    document.getElementById("kpi-active").textContent = active;
+    document.getElementById("kpi-active-d").textContent = "▲ of " + data.length + " total";
+    document.getElementById("kpi-lines").textContent = totalLines;
+    document.getElementById("kpi-cust").textContent = Object.keys(custs).length;
+    document.getElementById("kpi-value").textContent = m0(val);
+  }
+
+  // ---------- Filters ----------
+  function filtered() {
+    var txt = document.getElementById("f-text").value.trim().toLowerCase();
+    var fc = document.getElementById("f-cust").value;
+    var fl = document.getElementById("f-life").value;
+    return data.filter(function (g) {
+      if (fc && g.cust !== fc) return false;
+      if (fl && g.life !== fl) return false;
+      if (txt && (g.camp + " " + g.cust).toLowerCase().indexOf(txt) === -1) return false;
+      return true;
+    });
+  }
+
+  function rowHTML(g) {
+    var bclass = LIFE_BADGE[g.life];
+    return '<tr class="clickable" data-id="' + g.id + '">' +
+      '<td><span class="badge ' + bclass + '">' + g.life + '</span></td>' +
+      '<td><b>' + esc(g.cust) + '</b></td>' +
+      '<td>' + esc(g.camp) + '</td>' +
+      '<td class="num">' + g.lines.length + '</td>' +
+      '<td>' + g.cad + '</td>' +
+      '<td>' + fmtDate(g.start) + '</td>' +
+      '<td>' + fmtDate(g.end) + '</td>' +
+      '<td class="num">' + m0(groupValue(g)) + '</td></tr>';
+  }
+
+  function renderTable() {
+    var rows = filtered();
+    var tbody = document.getElementById("ag-rows");
+    var empty = document.getElementById("ag-empty");
+    document.getElementById("ag-table").style.display = rows.length ? "" : "none";
+    empty.style.display = rows.length ? "none" : "block";
+
+    if (document.getElementById("f-group").checked) {
+      var groups = {};
+      rows.forEach(function (g) { (groups[g.cust] = groups[g.cust] || []).push(g); });
+      var html = "";
+      Object.keys(groups).sort().forEach(function (cust) {
+        var gs = groups[cust];
+        var sub = gs.reduce(function (s, g) { return s + groupValue(g); }, 0);
+        html += '<tr style="background:var(--accent-soft)"><td colspan="7" style="font-weight:700;color:var(--accent-deep)">' +
+          esc(cust) + ' <span class="muted small" style="font-weight:600">· ' + gs.length + ' ad group' + (gs.length > 1 ? 's' : '') + '</span></td>' +
+          '<td class="num" style="font-weight:700;background:var(--accent-soft)">' + m0(sub) + '</td></tr>';
+        html += gs.map(rowHTML).join('');
+      });
+      tbody.innerHTML = html;
+    } else {
+      tbody.innerHTML = rows.map(rowHTML).join('');
+    }
+  }
+
+  // ---------- Detail drawer ----------
+  function openDetail(id) {
+    var g = data.filter(function (x) { return x.id === id; })[0];
+    if (!g) return;
+    var total = groupValue(g);
+    document.getElementById("dd-title").textContent = g.camp;
+    var bclass = LIFE_BADGE[g.life];
+    var html =
+      '<div class="row" style="gap:8px;margin-bottom:12px"><span class="badge ' + bclass + '">' + g.life + '</span>' +
+      '<span class="badge accent">' + g.cad + '</span></div>' +
+      '<div class="grid grid-2" style="margin-bottom:14px">' +
+        '<div class="stat"><div class="label">Customer</div><div class="value" style="font-size:1.05rem">' + esc(g.cust) + '</div></div>' +
+        '<div class="stat"><div class="label">Est. value</div><div class="value" style="font-size:1.05rem">' + m(total) + '</div></div>' +
+      '</div>' +
+      '<p class="small muted" style="margin:0 0 14px">Runs <b>' + fmtDate(g.start) + '</b> → <b>' + fmtDate(g.end) + '</b> · ' + g.lines.length + ' product line' + (g.lines.length > 1 ? 's' : '') + '</p>' +
+      '<div class="row" style="margin-bottom:8px"><h4 style="margin:0">Product lines</h4>' +
+        '<button class="btn btn-ghost btn-sm spacer" id="dd-addline">+ Add line</button>' +
+        '<button class="btn btn-primary btn-sm" id="dd-edit">Edit</button></div>' +
+      '<div class="table-wrap" style="box-shadow:none">' +
+        '<table class="t"><thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Line total</th></tr></thead>' +
+        '<tbody>' + g.lines.map(function (l) {
+          return '<tr><td>' + esc(l.product) + '</td><td class="num">' + l.qty + '</td><td class="num">' + m(l.price) +
+            '</td><td class="num">' + m(l.qty * l.price) + '</td></tr>';
+        }).join('') +
+        '</tbody><tfoot><tr><td colspan="3">Total est. value</td><td class="num">' + m(total) + '</td></tr></tfoot></table></div>' +
+      '<p class="small muted" style="margin-top:16px;display:flex;align-items:center;gap:6px">' +
+        '<span class="dot muted"></span> Created by <b style="color:var(--d-text)">&nbsp;Alex Rivera</b> · 2 days ago</p>';
+    document.getElementById("dd-body").innerHTML = html;
+    document.getElementById("dd-edit").addEventListener("click", function () { FS.toast("Edit mode (demo)"); });
+    document.getElementById("dd-addline").addEventListener("click", function () { FS.toast("Add line (demo)"); });
+    FS.openDrawer("detail-drawer");
+  }
+
+  // ---------- Create drawer ----------
+  function lineRow() {
+    var opts = PRODUCTS.map(function (p) { return '<option>' + p + '</option>'; }).join('');
+    return '<tr>' +
+      '<td><select class="inp c-prod" style="padding:.35rem .5rem">' + opts + '</select></td>' +
+      '<td><input class="inp c-qty num" type="number" min="0" value="100" style="padding:.35rem .5rem;text-align:right" /></td>' +
+      '<td><input class="inp c-price num" type="number" min="0" step="0.01" value="20.00" style="padding:.35rem .5rem;text-align:right" /></td>' +
+      '</tr>';
+  }
+  function resetCreate() {
+    var cs = document.getElementById("c-cust");
+    cs.innerHTML = CUSTOMERS.map(function (c) { return '<option>' + c + '</option>'; }).join('');
+    document.getElementById("c-camp").value = "";
+    document.getElementById("c-life").value = "Upcoming";
+    document.getElementById("c-cad").value = "Weekly";
+    document.getElementById("c-start").value = "2026-07-01";
+    document.getElementById("c-end").value = "2026-09-01";
+    document.getElementById("c-lines").innerHTML = lineRow();
+  }
+
+  function saveCreate() {
+    var camp = document.getElementById("c-camp").value.trim();
+    if (!camp) { FS.toast("Enter a campaign name"); return; }
+    var newLines = [];
+    document.querySelectorAll("#c-lines tr").forEach(function (tr) {
+      var prod = tr.querySelector(".c-prod").value;
+      var qty = parseInt(tr.querySelector(".c-qty").value, 10) || 0;
+      var price = parseFloat(tr.querySelector(".c-price").value) || 0;
+      if (qty > 0) newLines.push({ product: prod, qty: qty, price: price });
+    });
+    if (!newLines.length) { FS.toast("Add at least one product line"); return; }
+    data.unshift({
+      id: ++nextId,
+      cust: document.getElementById("c-cust").value,
+      camp: camp,
+      life: document.getElementById("c-life").value,
+      cad: document.getElementById("c-cad").value,
+      start: document.getElementById("c-start").value || "2026-07-01",
+      end: document.getElementById("c-end").value || "2026-09-01",
+      lines: newLines
+    });
+    FS.closeDrawer();
+    renderKPIs();
+    renderTable();
+    FS.toast("Ad group created");
+  }
+
+  // ---------- Wire up ----------
+  function populateCustFilter() {
+    var sel = document.getElementById("f-cust");
+    sel.innerHTML = '<option value="">All customers</option>' + CUSTOMERS.map(function (c) { return '<option>' + c + '</option>'; }).join('');
+  }
+
+  ["f-text", "f-cust", "f-life"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", renderTable);
+    document.getElementById(id).addEventListener("change", renderTable);
+  });
+  document.getElementById("f-group").addEventListener("change", renderTable);
+
+  document.getElementById("ag-rows").addEventListener("click", function (e) {
+    var row = e.target.closest("[data-id]");
+    if (row) openDetail(+row.getAttribute("data-id"));
+  });
+
+  document.getElementById("exp-csv").addEventListener("click", function () { FS.toast("CSV exported · " + filtered().length + " ad groups"); });
+  document.getElementById("exp-pdf").addEventListener("click", function () { FS.toast("PDF exported · " + filtered().length + " ad groups"); });
+
+  document.getElementById("new-ag").addEventListener("click", function () { resetCreate(); FS.openDrawer("create-drawer"); });
+  document.getElementById("c-addline").addEventListener("click", function () {
+    if (document.querySelectorAll("#c-lines tr").length >= 3) { FS.toast("Up to 3 lines in this demo"); return; }
+    document.getElementById("c-lines").insertAdjacentHTML("beforeend", lineRow());
+  });
+  document.getElementById("c-save").addEventListener("click", saveCreate);
+
+  // ---------- Reset / init ----------
+  window.resetDemo = function () {
+    data = clone(SEED);
+    nextId = 100;
+    document.getElementById("f-text").value = "";
+    document.getElementById("f-cust").value = "";
+    document.getElementById("f-life").value = "";
+    document.getElementById("f-group").checked = false;
+    renderKPIs();
+    renderTable();
+    FS.toast("Demo reset");
+  };
+
+  function init() {
+    data = clone(SEED);
+    populateCustFilter();
+    renderKPIs();
+    renderTable();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

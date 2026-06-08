@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuickBooks Financial Analysis — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="fin">
+
+<div class="demo-banner">
+  <a href="../index.html#finance">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional company</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M4 4v16h16"/><path d="M8 14l3-3 2 2 4-5"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Financial Analysis</div>
+      <div class="app-header__sub">Meridian Distribution Co. · <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● Connected to QuickBooks</span></div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <label class="small" style="color:rgba(255,255,255,.85)">Period</label>
+      <select id="period" class="inp" style="width:auto;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)">
+        <option value="ytd">FY2026 YTD</option>
+        <option value="q1">Q1 2026</option>
+        <option value="m">May 2026</option>
+      </select>
+    </div>
+  </header>
+
+  <div data-tabs>
+    <div class="tabs">
+      <button class="tab active" data-panel="p-dash">Dashboard</button>
+      <button class="tab" data-panel="p-bs">Balance Sheet</button>
+      <button class="tab" data-panel="p-cf">Cash Flow</button>
+      <button class="tab" data-panel="p-bva">Budget vs Actual</button>
+      <button class="tab" data-panel="p-ap">AP Aging</button>
+      <button class="tab" data-panel="p-ai">AI Analysis ✨</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section class="panel active" id="p-dash">
+      <div class="grid grid-4">
+        <div class="stat"><div class="label">Revenue</div><div class="value" data-kpi="rev"></div><div class="delta up" data-kpi="revd"></div></div>
+        <div class="stat"><div class="label">Net Income</div><div class="value" data-kpi="ni"></div><div class="delta up" data-kpi="nid"></div></div>
+        <div class="stat"><div class="label">Gross Margin</div><div class="value" data-kpi="gm"></div><div class="delta up" data-kpi="gmd"></div></div>
+        <div class="stat"><div class="label">Cash on Hand</div><div class="value" data-kpi="cash"></div><div class="delta down" data-kpi="cashd"></div></div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="card card-pad">
+          <div class="row"><h3 style="margin:0">Revenue by month</h3><span class="spacer badge accent" data-kpi="period-label"></span></div>
+          <div class="bars" id="rev-bars" style="margin-top:14px"></div>
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 6px">Income by department</h3>
+          <p class="small muted" style="margin:0 0 10px">Click a department to drill in →</p>
+          <div class="table-wrap" style="box-shadow:none;border:none">
+            <table class="t">
+              <thead><tr><th>Department</th><th class="num">Revenue</th><th class="num">Net</th><th class="num">Margin</th></tr></thead>
+              <tbody id="dept-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BALANCE SHEET -->
+    <section class="panel" id="p-bs">
+      <div class="grid grid-2">
+        <div class="card card-pad">
+          <h3>Assets</h3>
+          <table class="t" id="t-assets"></table>
+        </div>
+        <div class="card card-pad">
+          <h3>Liabilities &amp; Equity</h3>
+          <table class="t" id="t-liab"></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CASH FLOW -->
+    <section class="panel" id="p-cf">
+      <div class="card card-pad">
+        <h3>Statement of Cash Flows</h3>
+        <table class="t" id="t-cf"></table>
+      </div>
+    </section>
+
+    <!-- BUDGET VS ACTUAL -->
+    <section class="panel" id="p-bva">
+      <div class="card card-pad">
+        <div class="row"><h3 style="margin:0">Budget vs Actual</h3><span class="spacer small muted">Variance highlighted when |Δ| &gt; 5%</span></div>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:10px">
+          <table class="t">
+            <thead><tr><th>Account</th><th class="num">Budget</th><th class="num">Actual</th><th class="num">Variance</th><th class="num">%</th></tr></thead>
+            <tbody id="bva-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- AP AGING -->
+    <section class="panel" id="p-ap">
+      <div class="grid grid-4">
+        <div class="stat"><div class="label">Current</div><div class="value" id="ap-cur"></div></div>
+        <div class="stat"><div class="label">1–30 days</div><div class="value" id="ap-30"></div></div>
+        <div class="stat"><div class="label">31–60 days</div><div class="value" id="ap-60"></div></div>
+        <div class="stat"><div class="label">60+ days</div><div class="value" style="color:var(--bad)" id="ap-90"></div></div>
+      </div>
+      <div class="card card-pad" style="margin-top:16px">
+        <h3>Vendor aging detail</h3>
+        <div class="table-wrap" style="box-shadow:none;border:none">
+          <table class="t">
+            <thead><tr><th>Vendor</th><th class="num">Current</th><th class="num">1–30</th><th class="num">31–60</th><th class="num">60+</th><th class="num">Total</th></tr></thead>
+            <tbody id="ap-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI ANALYSIS -->
+    <section class="panel" id="p-ai">
+      <div class="card card-pad">
+        <div class="row">
+          <h3 style="margin:0">AI‑written analysis</h3>
+          <span class="badge accent">Claude</span>
+          <button class="btn btn-ghost btn-sm spacer" id="regen">↻ Regenerate</button>
+        </div>
+        <p class="small muted">Plain‑English commentary generated from the connected books. Click regenerate to see another pass.</p>
+        <div id="ai-out" style="margin-top:8px"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Department drill-in drawer -->
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="dept-drawer">
+  <div class="drawer__head"><h3 style="margin:0" id="dd-title">Department</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body" id="dd-body"></div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  // ---------- Seeded data (fictional) ----------
+  var PERIODS = {
+    ytd: { label: "FY2026 YTD", scale: 1, months: ["Jan","Feb","Mar","Apr","May"], rev: [612,648,705,690,742] },
+    q1:  { label: "Q1 2026", scale: 0.6, months: ["Jan","Feb","Mar"], rev: [612,648,705] },
+    m:   { label: "May 2026", scale: 0.21, months: ["W1","W2","W3","W4"], rev: [171,182,196,193] }
+  };
+  var DEPTS = [
+    { name: "Produce", rev: 1640000, net: 232000 },
+    { name: "Dry Goods", rev: 1120000, net: 168000 },
+    { name: "Logistics", rev: 410000, net: 38000 },
+    { name: "Administration", rev: 0, net: -96000 }
+  ];
+  var VENDORS = [
+    { v: "Coastal Packaging", c: 18400, d30: 6200, d60: 0, d90: 0 },
+    { v: "Valley Cold Storage", c: 12600, d30: 9800, d60: 4100, d90: 0 },
+    { v: "Pacific Fuel Co.", c: 8200, d30: 0, d60: 0, d90: 3400 },
+    { v: "Northgate Supply", c: 5400, d30: 2100, d60: 1200, d90: 0 },
+    { v: "Sierra Maintenance", c: 0, d30: 0, d60: 0, d90: 2750 }
+  ];
+  var BVA = [
+    { a: "Product Revenue", b: 3200000, x: 3170000 },
+    { a: "Cost of Goods Sold", b: -1980000, x: -2074000 },
+    { a: "Payroll", b: -540000, x: -528000 },
+    { a: "Freight & Logistics", b: -210000, x: -243000 },
+    { a: "Facilities", b: -96000, x: -94000 },
+    { a: "Marketing", b: -60000, x: -41000 }
+  ];
+
+  var m = FS.money0;
+
+  function setKPIs(p) {
+    var s = PERIODS[p].scale;
+    document.querySelector('[data-kpi="rev"]').textContent = m(3397000 * s);
+    document.querySelector('[data-kpi="revd"]').textContent = "▲ 8.1% vs prior";
+    document.querySelector('[data-kpi="ni"]').textContent = m(342000 * s);
+    document.querySelector('[data-kpi="nid"]').textContent = "▲ 5.4%";
+    document.querySelector('[data-kpi="gm"]').textContent = "38.9%";
+    document.querySelector('[data-kpi="gmd"]').textContent = "▲ 1.2 pts";
+    document.querySelector('[data-kpi="cash"]').textContent = m(486000);
+    document.querySelector('[data-kpi="cashd"]').textContent = "▼ 3.0% (AP up)";
+    document.querySelector('[data-kpi="period-label"]').textContent = PERIODS[p].label;
+    drawBars(p);
+  }
+  function drawBars(p) {
+    var data = PERIODS[p].rev, max = Math.max.apply(null, data), labels = PERIODS[p].months;
+    document.getElementById("rev-bars").innerHTML = data.map(function (v, i) {
+      return '<div class="bar" style="height:' + (v / max * 100) + '%"><span>' + labels[i] + '</span></div>';
+    }).join('');
+  }
+  function deptRows() {
+    document.getElementById("dept-rows").innerHTML = DEPTS.map(function (d, i) {
+      var marg = d.rev ? (d.net / d.rev * 100).toFixed(1) + "%" : "—";
+      return '<tr class="clickable" data-dept="' + i + '"><td><b>' + d.name + '</b></td><td class="num">' + m(d.rev) +
+        '</td><td class="num" style="color:' + (d.net < 0 ? 'var(--bad)' : 'inherit') + '">' + m(d.net) + '</td><td class="num">' + marg + '</td></tr>';
+    }).join('');
+  }
+  function balanceSheet() {
+    var assets = [["Cash & equivalents",486000],["Accounts receivable",612000],["Inventory",548000],["Equipment (net)",430000],["__Total assets",2076000]];
+    var liab = [["Accounts payable",289000],["Line of credit",240000],["Long‑term debt",410000],["Retained earnings",795000],["Owner equity",342000],["__Total L&E",2076000]];
+    function rows(arr){return arr.map(function(r){var tot=r[0].indexOf("__")===0;return '<tr'+(tot?' style="font-weight:700;background:var(--d-surface-2)"':'')+'><td>'+r[0].replace("__","")+'</td><td class="num">'+m(r[1])+'</td></tr>';}).join('');}
+    document.getElementById("t-assets").innerHTML = rows(assets);
+    document.getElementById("t-liab").innerHTML = rows(liab);
+  }
+  function cashFlow() {
+    var cf = [["Net income",342000],["+ Depreciation",58000],["− Increase in A/R",-74000],["− Increase in inventory",-39000],["+ Increase in A/P",46000],["__Operating cash flow",333000],["− Equipment purchases",-120000],["__Investing",-120000],["− Debt repayment",-90000],["+ Owner draws",-60000],["__Financing",-150000],["__Net change in cash",63000]];
+    document.getElementById("t-cf").innerHTML = cf.map(function(r){var tot=r[0].indexOf("__")===0;return '<tr'+(tot?' style="font-weight:700;background:var(--d-surface-2)"':'')+'><td>'+r[0].replace("__","")+'</td><td class="num" style="color:'+(r[1]<0?'var(--bad)':'inherit')+'">'+m(r[1])+'</td></tr>';}).join('');
+  }
+  function bva() {
+    document.getElementById("bva-rows").innerHTML = BVA.map(function (r) {
+      var v = r.x - r.b, pct = (v / Math.abs(r.b) * 100), bad = Math.abs(pct) > 5;
+      return '<tr' + (bad ? ' class="is-bad"' : '') + '><td>' + r.a + '</td><td class="num">' + m(r.b) + '</td><td class="num">' + m(r.x) +
+        '</td><td class="num" style="color:' + (v < 0 ? 'var(--bad)' : 'var(--ok)') + '">' + (v >= 0 ? '+' : '') + m(v) +
+        '</td><td class="num">' + (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%</td></tr>';
+    }).join('');
+  }
+  function apAging() {
+    var sum = { c: 0, d30: 0, d60: 0, d90: 0 };
+    VENDORS.forEach(function (x) { sum.c += x.c; sum.d30 += x.d30; sum.d60 += x.d60; sum.d90 += x.d90; });
+    document.getElementById("ap-cur").textContent = m(sum.c);
+    document.getElementById("ap-30").textContent = m(sum.d30);
+    document.getElementById("ap-60").textContent = m(sum.d60);
+    document.getElementById("ap-90").textContent = m(sum.d90);
+    document.getElementById("ap-rows").innerHTML = VENDORS.map(function (x) {
+      var t = x.c + x.d30 + x.d60 + x.d90;
+      return '<tr><td><b>' + x.v + '</b></td><td class="num">' + m(x.c) + '</td><td class="num">' + m(x.d30) +
+        '</td><td class="num">' + m(x.d60) + '</td><td class="num" style="color:' + (x.d90 ? 'var(--bad)' : 'inherit') + '">' + m(x.d90) +
+        '</td><td class="num"><b>' + m(t) + '</b></td></tr>';
+    }).join('');
+  }
+  var AI = [
+    "<p><b>Revenue</b> is up <b>8.1%</b> year‑over‑year, led by the Produce department (+11%). Dry Goods grew a steadier 4%, while Logistics revenue was flat.</p><p><b>Watch:</b> Cost of goods sold ran <b>$94K over budget (+4.7%)</b>, compressing gross margin in April before recovering in May. Freight is the main driver — see Budget vs Actual.</p><p><b>Cash:</b> Operating cash flow of <b>$333K</b> is healthy, but accounts payable aged into the 60+ bucket for two vendors. Clearing the $9.6K past‑due balance would avoid late terms.</p>",
+    "<p>The business is <b>profitable and growing</b>, with net income of <b>$342K</b> on $3.4M revenue (10.1% net margin). Administration carries a $96K cost that the operating departments comfortably cover.</p><p><b>Opportunity:</b> Marketing came in <b>$19K under budget</b> while Produce — your best‑margin line at 14.1% — is growing fastest. Reallocating some of that underspend toward Produce promotion is worth modeling.</p><p><b>Risk:</b> Two vendors (Pacific Fuel, Sierra Maintenance) have balances past 60 days. Small dollars, but worth a same‑day fix to protect terms.</p>"
+  ];
+  var aiIdx = 0;
+  function renderAI() { document.getElementById("ai-out").innerHTML = AI[aiIdx % AI.length]; }
+
+  // ---------- Wire up ----------
+  document.getElementById("period").addEventListener("change", function (e) { setKPIs(e.target.value); });
+  document.getElementById("regen").addEventListener("click", function () { aiIdx++; renderAI(); FS.toast("Regenerated analysis"); });
+  document.addEventListener("click", function (e) {
+    var row = e.target.closest("[data-dept]");
+    if (row) {
+      var d = DEPTS[+row.getAttribute("data-dept")];
+      document.getElementById("dd-title").textContent = d.name;
+      document.getElementById("dd-body").innerHTML =
+        '<div class="grid grid-2"><div class="stat"><div class="label">Revenue</div><div class="value">' + m(d.rev) + '</div></div>' +
+        '<div class="stat"><div class="label">Net</div><div class="value" style="color:' + (d.net<0?'var(--bad)':'inherit') + '">' + m(d.net) + '</div></div></div>' +
+        '<p class="small muted" style="margin-top:14px">Role‑scoped access means a department head only sees their own numbers. This drill‑in shows the monthly trend, top accounts, and the transactions behind the total — the same data the AI analysis reasons over.</p>' +
+        '<div class="bars" style="margin-top:18px">' + [62,68,71,69,74].map(function(v){return '<div class="bar" style="height:'+v+'%"></div>';}).join('') + '</div>';
+      FS.openDrawer("dept-drawer");
+    }
+  });
+
+  window.resetDemo = function () { document.getElementById("period").value = "ytd"; aiIdx = 0; init(); FS.toast("Demo reset"); };
+  function init() { setKPIs(document.getElementById("period").value); deptRows(); balanceSheet(); cashFlow(); bva(); apAging(); renderAI(); }
+  init();
+})();
+</script>
+</body>
+</html>

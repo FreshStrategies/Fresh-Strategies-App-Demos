@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Time Cards & California Compliance — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="elec">
+
+<div class="demo-banner">
+  <a href="../index.html#electrical">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · live calc</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Time Cards &amp; CA Compliance</div>
+      <div class="app-header__sub" id="hdr-sub">Weekly cards · auto OT / DT / meal &amp; rest</div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <span class="avatar" id="role-av">MR</span>
+      <select id="role" class="inp" style="width:auto;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)">
+        <option value="employee" selected>Employee</option>
+        <option value="admin">Office / Admin</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- ============ EMPLOYEE (mobile phone) ============ -->
+  <div id="view-employee">
+    <div class="phone-stage">
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__notch"></div>
+          <div class="m-header">
+            <span class="avatar" id="m-av">MR</span>
+            <div style="flex:1">
+              <h3 id="m-name">Miguel Reyes</h3>
+              <div class="small" style="color:rgba(255,255,255,.85)" id="m-week">Week of Mon Jun 1 – Sun Jun 7</div>
+            </div>
+            <span id="m-status"></span>
+          </div>
+          <div class="m-body" id="m-body"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ OFFICE / ADMIN (desktop) ============ -->
+  <div id="view-admin" style="display:none">
+    <div data-tabs>
+      <div class="tabs">
+        <button class="tab active" data-panel="p-appr">Approvals <span class="badge-num" id="appr-count">0</span></button>
+        <button class="tab" data-panel="p-team">Team</button>
+        <button class="tab" data-panel="p-act">Activity</button>
+      </div>
+
+      <!-- APPROVALS -->
+      <section class="panel active" id="p-appr">
+        <div class="grid grid-4">
+          <div class="stat"><div class="label">Submitted cards</div><div class="value" id="kpi-sub">0</div></div>
+          <div class="stat"><div class="label">Total gross (week)</div><div class="value" id="kpi-gross">$0</div></div>
+          <div class="stat"><div class="label">OT + DT hours</div><div class="value" id="kpi-ot">0</div></div>
+          <div class="stat"><div class="label">Compliance flags</div><div class="value" style="color:var(--warn)" id="kpi-flags">0</div></div>
+        </div>
+
+        <div class="card card-pad" style="margin-top:16px">
+          <div class="row wrap">
+            <h3 style="margin:0">Payroll rollup — pending approval</h3>
+            <span class="spacer small muted">Click a row for the full tier breakdown</span>
+            <button class="btn btn-primary btn-sm" id="bulk-approve">✓ Bulk approve</button>
+          </div>
+          <div class="table-wrap" style="box-shadow:none;border:none;margin-top:12px">
+            <table class="t">
+              <thead><tr>
+                <th>Employee</th><th>Week</th>
+                <th class="num">REG</th><th class="num">OT&nbsp;1.5×</th><th class="num">DT&nbsp;2×</th>
+                <th class="num">Gross</th><th>Compliance</th><th>Status</th>
+              </tr></thead>
+              <tbody id="appr-rows"></tbody>
+            </table>
+          </div>
+          <p class="small muted" style="margin-top:12px">Prototype math — validate with a CA payroll professional before production.</p>
+        </div>
+      </section>
+
+      <!-- TEAM -->
+      <section class="panel" id="p-team">
+        <div class="card card-pad">
+          <div class="row"><h3 style="margin:0">Crew roster</h3><span class="spacer small muted">Rate groups drive gross-pay calc</span></div>
+          <div class="table-wrap" style="box-shadow:none;border:none;margin-top:12px">
+            <table class="t">
+              <thead><tr><th>Employee</th><th>Rate group</th><th class="num">Rate / hr</th><th class="num">Vacation bal</th><th>Card status</th></tr></thead>
+              <tbody id="team-rows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card card-pad" style="margin-top:16px">
+          <h3 style="margin:0 0 6px">Rate groups</h3>
+          <div class="grid grid-4">
+            <div class="stat"><div class="label">Standard</div><div class="value">$32.00</div></div>
+            <div class="stat"><div class="label">Night</div><div class="value">$36.80</div></div>
+            <div class="stat"><div class="label">Prevailing Wage</div><div class="value">$52.30</div></div>
+            <div class="stat"><div class="label">Apprentice</div><div class="value">$24.00</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ACTIVITY -->
+      <section class="panel" id="p-act">
+        <div class="card card-pad">
+          <div class="row"><h3 style="margin:0">Audit log</h3><span class="spacer badge accent">Append-only</span></div>
+          <ul class="timeline" id="act-log" style="margin-top:14px"></ul>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Card review drawer (admin) -->
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="card-drawer">
+  <div class="drawer__head"><h3 style="margin:0" id="cd-title">Time card</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body" id="cd-body"></div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Rate groups ----------
+  var RATES = {
+    "Standard": 32.00,
+    "Night": 36.80,
+    "Prevailing Wage": 52.30,
+    "Apprentice": 24.00
+  };
+
+  var DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  var DATES = ["Jun 1","Jun 2","Jun 3","Jun 4","Jun 5","Jun 6","Jun 7"];
+
+  // ---------- Helpers: time parsing / rounding ----------
+  // times stored as "HH:MM" 24h strings. lunchMin = unpaid lunch minutes.
+  function toMin(hhmm) {
+    if (!hhmm) return null;
+    var p = hhmm.split(":");
+    return (+p[0]) * 60 + (+p[1]);
+  }
+  function fmt12(hhmm) {
+    if (!hhmm) return "—";
+    var m = toMin(hhmm), h = Math.floor(m / 60), mm = m % 60;
+    var ap = h >= 12 ? "p" : "a";
+    var h12 = h % 12; if (h12 === 0) h12 = 12;
+    return h12 + ":" + (mm < 10 ? "0" : "") + mm + ap;
+  }
+  // round worked minutes UP to nearest 15
+  function roundUp15(min) { return Math.ceil(min / 15) * 15; }
+
+  // worked hours for a day (rounded up to 15 min), given in/out + lunch
+  function dayHours(d) {
+    if (!d.in || !d.out) return 0;
+    var worked = toMin(d.out) - toMin(d.in) - (d.lunchMin || 0);
+    if (worked < 0) return 0;
+    return roundUp15(worked) / 60;
+  }
+
+  // Late-meal premium: lunch must START before the end of the 5th hour of work.
+  // i.e. (lunchStart - clockIn) must be <= 5h. Otherwise 1hr premium.
+  function lateMeal(d) {
+    if (!d.in || !d.lunchStart || (d.lunchMin || 0) === 0) return false;
+    return (toMin(d.lunchStart) - toMin(d.in)) > 5 * 60;
+  }
+
+  // ---------- California weekly OT/DT engine ----------
+  // Daily: 0-8 REG, 8-12 OT(1.5), >12 DT(2.0)
+  // Weekly: straight-time (non-OT/DT) hours beyond 40 become OT (anti-pyramiding).
+  // 7th consecutive worked day: first 8h OT, beyond 8h DT (CA rule, applied here).
+  function computeCard(card) {
+    var emp = EMP[card.empId];
+    var rate = RATES[emp.group];
+    var reg = 0, ot = 0, dt = 0;
+    var flags = { lateMeal: false, missedRest: false, seventhDay: false };
+    var worked = [];
+    var workedDayCount = 0;
+
+    card.days.forEach(function (d, i) {
+      var h = dayHours(d);
+      worked.push(h);
+      if (h > 0) workedDayCount++;
+      var dReg = 0, dOt = 0, dDt = 0;
+      var isSeventh = (i === 6) && card.days.every(function (x) { return dayHours(x) > 0; });
+
+      if (isSeventh && h > 0) {
+        // 7th consecutive day: first 8 OT, beyond 8 DT
+        flags.seventhDay = true;
+        dOt = Math.min(h, 8);
+        dDt = Math.max(0, h - 8);
+      } else {
+        dReg = Math.min(h, 8);
+        dOt = Math.max(0, Math.min(h, 12) - 8);
+        dDt = Math.max(0, h - 12);
+      }
+      reg += dReg; ot += dOt; dt += dDt;
+
+      if (lateMeal(d)) flags.lateMeal = true;
+    });
+
+    // Weekly OT: straight-time hours over 40 (anti-pyramiding — only REG portion)
+    if (reg > 40) {
+      var weeklyOt = reg - 40;
+      reg = 40;
+      ot += weeklyOt;
+    }
+
+    if (card.missedRest) flags.missedRest = true;
+
+    // Premiums (1 hour each at regular rate)
+    var premiumHours = 0;
+    if (flags.lateMeal) premiumHours += 1;
+    if (flags.missedRest) premiumHours += 1;
+
+    var gross = reg * rate + ot * rate * 1.5 + dt * rate * 2.0 + premiumHours * rate;
+
+    return {
+      reg: reg, ot: ot, dt: dt,
+      premiumHours: premiumHours,
+      flags: flags,
+      rate: rate, group: emp.group,
+      gross: gross,
+      perDay: worked,
+      totalWorked: reg + ot + dt
+    };
+  }
+
+  // ---------- Seed data ----------
+  var EMP = {
+    miguel: { id: "miguel", name: "Miguel Reyes", group: "Prevailing Wage", vac: 42.5 },
+    jose:   { id: "jose",   name: "José Martinez", group: "Standard", vac: 18.0 },
+    tyler:  { id: "tyler",  name: "Tyler Brooks", group: "Night", vac: 26.5 },
+    sarah:  { id: "sarah",  name: "Sarah Kim", group: "Standard", vac: 64.0 },
+    hector: { id: "hector", name: "Hector Diaz", group: "Apprentice", vac: 9.5 }
+  };
+
+  // day object: { in, lunchStart, lunchMin, out, job }
+  function D(inT, lunchStart, lunchMin, out, job) {
+    return { in: inT, lunchStart: lunchStart, lunchMin: lunchMin, out: out, job: job || "Retail TI" };
+  }
+  function off() { return { in: null, lunchStart: null, lunchMin: 0, out: null, job: "—" }; }
+
+  function seed() {
+    return {
+      // The interactive employee card (Miguel) — includes an OT day, a DT day, a late-meal day.
+      cards: [
+        {
+          id: "TC-1041", empId: "miguel", week: "Jun 1 – Jun 7", status: "Draft",
+          missedRest: false, signed: false,
+          days: [
+            D("06:30", "12:30", 30, "16:00", "Hospital Wing C"),      // Mon ~9.0h -> OT
+            D("06:30", "11:00", 30, "15:00", "Hospital Wing C"),      // Tue 8.0h
+            D("06:00", "12:30", 30, "19:00", "Warehouse Dock 4"),     // Wed ~12.5h -> DT + late meal (lunch >5h in)
+            D("07:00", "11:30", 30, "15:30", "Retail TI"),            // Thu 8.0h
+            D("07:00", "11:30", 30, "15:30", "Retail TI"),            // Fri 8.0h
+            off(), off()
+          ]
+        },
+        {
+          id: "TC-1042", empId: "jose", week: "Jun 1 – Jun 7", status: "Submitted",
+          missedRest: true, signed: true,
+          days: [
+            D("07:00", "11:30", 30, "17:30", "Retail TI"),            // Mon ~10h OT
+            D("07:00", "11:30", 30, "15:30", "Retail TI"),
+            D("07:00", "11:30", 30, "15:30", "Retail TI"),
+            D("07:00", "11:30", 30, "15:30", "Retail TI"),
+            D("07:00", "11:30", 30, "15:30", "Retail TI"),
+            off(), off()
+          ]
+        },
+        {
+          id: "TC-1043", empId: "tyler", week: "Jun 1 – Jun 7", status: "Submitted",
+          missedRest: false, signed: true,
+          days: [
+            off(),
+            D("21:00", "01:30", 30, "05:30", "Mall — night"),         // Tue night ~8h
+            D("21:00", "01:30", 30, "05:30", "Mall — night"),
+            D("21:00", "02:00", 30, "07:30", "Mall — night"),         // ~10h OT + late meal
+            D("21:00", "01:30", 30, "05:30", "Mall — night"),
+            D("21:00", "01:30", 30, "05:30", "Mall — night"),
+            off()
+          ]
+        },
+        {
+          id: "TC-1044", empId: "sarah", week: "Jun 1 – Jun 7", status: "Submitted",
+          missedRest: false, signed: true,
+          days: [
+            D("08:00", "12:00", 60, "16:30", "Service Calls"),        // Mon 7.5h
+            D("08:00", "12:00", 60, "16:30", "Service Calls"),
+            D("08:00", "12:00", 60, "16:30", "Service Calls"),
+            D("08:00", "12:00", 60, "16:30", "Service Calls"),
+            D("08:00", "12:00", 60, "16:30", "Service Calls"),
+            D("08:00", "12:00", 30, "13:00", "Service Calls"),        // Sat short -> pushes weekly >40 OT
+            off()
+          ]
+        }
+      ],
+      activity: [
+        ["Dana approved TC-1039 · Hector Diaz", "Mon 4:58p"],
+        ["José Martinez submitted TC-1042", "Mon 3:12p"],
+        ["Tyler Brooks submitted TC-1043", "Mon 6:40a"],
+        ["Sarah Kim submitted TC-1044", "Sun 5:20p"]
+      ]
+    };
+  }
+
+  var DB = seed();
+  function myCard() { return DB.cards[0]; }
+
+  // ---------- Badges ----------
+  function statusBadge(s) {
+    var cls = s === "Submitted" ? "info" : s === "Approved" ? "ok" : s === "Rejected" ? "bad" : "muted";
+    return '<span class="badge ' + cls + '">' + s + '</span>';
+  }
+  function flagBadges(c) {
+    var out = [];
+    if (c.flags.lateMeal) out.push('<span class="badge warn">⚠ Late meal</span>');
+    if (c.flags.missedRest) out.push('<span class="badge warn">⚠ Missed rest</span>');
+    if (c.flags.seventhDay) out.push('<span class="badge warn">⚠ 7th day</span>');
+    return out.length ? out.join(" ") : '<span class="badge ok">✓ Clear</span>';
+  }
+  function h1(n) { return (Math.round(n * 100) / 100).toString(); }
+
+  // ============================================================
+  //  EMPLOYEE (mobile) view
+  // ============================================================
+  function renderEmployee() {
+    var card = myCard();
+    var emp = EMP[card.empId];
+    var c = computeCard(card);
+
+    document.getElementById("m-av").textContent = FS.initials(emp.name);
+    document.getElementById("m-name").textContent = emp.name;
+    document.getElementById("m-week").textContent = "Week of Mon " + card.week;
+    document.getElementById("m-status").innerHTML = statusBadge(card.status);
+
+    var rows = card.days.map(function (d, i) {
+      var h = dayHours(d);
+      var worked = h > 0;
+      var lm = lateMeal(d);
+      var editable = worked; // allow editing clock-out on worked days
+      var outField = editable
+        ? '<input class="inp" type="time" value="' + d.out + '" data-day="' + i + '" data-field="out" style="padding:.3rem .4rem;font-size:.8rem;width:auto">'
+        : '<span class="muted">—</span>';
+      return '<div class="card card-pad" style="margin-bottom:8px;padding:12px">' +
+        '<div class="row" style="margin-bottom:6px"><b style="font-size:.92rem">' + DAYS[i] + ' · ' + DATES[i] + '</b>' +
+          '<span class="spacer small muted">' + (worked ? d.job : 'Off') + '</span>' +
+          (worked ? '<b style="margin-left:8px;font-variant-numeric:tabular-nums">' + h1(h) + 'h</b>' : '') + '</div>' +
+        (worked ?
+          '<div class="row wrap small" style="gap:8px;color:var(--d-muted)">' +
+            '<span>In <b style="color:var(--d-ink)">' + fmt12(d.in) + '</b></span>' +
+            '<span>Lunch <b style="color:var(--d-ink)">' + (d.lunchMin ? d.lunchMin + 'm' : '—') + '</b></span>' +
+            '<span style="display:inline-flex;align-items:center;gap:4px">Out ' + outField + '</span>' +
+          '</div>' +
+          (lm ? '<div style="margin-top:6px"><span class="badge warn">⚠ Late meal — lunch after 5th hr · +1h premium</span></div>' : '')
+          : '') +
+        '</div>';
+    }).join('');
+
+    // Breakdown card
+    var breakdown =
+      '<div class="card card-pad" style="margin-bottom:10px">' +
+        '<div class="row"><b>Weekly breakdown</b><span class="spacer badge accent">' + c.group + ' · ' + FS.money(c.rate) + '/hr</span></div>' +
+        '<table class="t" style="margin-top:10px">' +
+          '<tr><td>Straight (REG)</td><td class="num">' + h1(c.reg) + ' h</td><td class="num">' + FS.money(c.reg * c.rate) + '</td></tr>' +
+          '<tr><td>Overtime (1.5×)</td><td class="num">' + h1(c.ot) + ' h</td><td class="num">' + FS.money(c.ot * c.rate * 1.5) + '</td></tr>' +
+          '<tr><td>Double-time (2.0×)</td><td class="num">' + h1(c.dt) + ' h</td><td class="num">' + FS.money(c.dt * c.rate * 2) + '</td></tr>' +
+          (c.premiumHours ? '<tr><td>Premiums (' + c.premiumHours + 'h @ 1×)</td><td class="num">' + c.premiumHours + ' h</td><td class="num">' + FS.money(c.premiumHours * c.rate) + '</td></tr>' : '') +
+          '<tr style="font-weight:700;background:var(--d-surface-2)"><td>Gross</td><td class="num">' + h1(c.totalWorked) + ' h</td><td class="num">' + FS.money(c.gross) + '</td></tr>' +
+        '</table>' +
+      '</div>';
+
+    // Compliance / meal & rest section
+    var compliance =
+      '<div class="card card-pad" style="margin-bottom:10px">' +
+        '<div class="row"><b>Meal &amp; rest compliance</b><span class="spacer">' + flagBadges(c) + '</span></div>' +
+        '<div class="row" style="margin-top:12px;justify-content:space-between">' +
+          '<div><div class="small" style="font-weight:650">Missed a rest break this week?</div>' +
+            '<div class="small muted">Attestation adds a 1-hour premium (CA).</div></div>' +
+          '<button class="btn btn-sm ' + (card.missedRest ? 'btn-primary' : 'btn-ghost') + '" data-toggle-rest>' +
+            (card.missedRest ? '✓ Yes — premium added' : 'Attest missed rest') + '</button>' +
+        '</div>' +
+      '</div>';
+
+    // Signature + actions
+    var sig =
+      '<div class="card card-pad" style="margin-bottom:10px">' +
+        '<div class="small" style="font-weight:650;margin-bottom:6px">Employee signature</div>' +
+        '<div class="sigpad" data-sign>' + (card.signed ? '<b style="font-style:normal;color:var(--accent-deep)">✓ Signed — ' + emp.name + '</b>' : 'Tap to sign') + '</div>' +
+        '<div class="row" style="margin-top:12px">' +
+          '<button class="btn btn-ghost btn-sm" data-save>Save draft</button>' +
+          '<button class="btn btn-primary btn-sm spacer" data-submit' + (card.status === "Submitted" ? ' disabled' : '') + '>' +
+            (card.status === "Submitted" ? 'Submitted ✓' : 'Submit card') + '</button>' +
+        '</div>' +
+      '</div>';
+
+    // Vacation mini-section
+    var vac =
+      '<div class="card card-pad">' +
+        '<div class="row"><b>Vacation / PTO</b><span class="spacer badge accent">' + emp.vac.toFixed(1) + ' hrs available</span></div>' +
+        '<button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%;justify-content:center" data-pto>Request time off</button>' +
+      '</div>';
+
+    document.getElementById("m-body").innerHTML =
+      '<div class="row" style="margin-bottom:10px"><span class="badge accent">' + h1(c.totalWorked) + ' h worked</span>' +
+        '<span class="spacer small muted">Edit a clock-out below — totals recompute live</span></div>' +
+      rows + breakdown + compliance + sig + vac;
+  }
+
+  // ============================================================
+  //  ADMIN (desktop) view
+  // ============================================================
+  function submittedCards() {
+    return DB.cards.filter(function (c) { return c.status === "Submitted" || c.status === "Approved" || c.status === "Rejected"; });
+  }
+
+  function renderAdmin() {
+    var subs = submittedCards();
+    var pending = subs.filter(function (c) { return c.status === "Submitted"; });
+    document.getElementById("appr-count").textContent = pending.length;
+    document.getElementById("kpi-sub").textContent = pending.length;
+
+    var totGross = 0, totOtDt = 0, totFlags = 0;
+    subs.forEach(function (card) {
+      var c = computeCard(card);
+      if (card.status === "Submitted") {
+        totGross += c.gross; totOtDt += c.ot + c.dt;
+        totFlags += (c.flags.lateMeal ? 1 : 0) + (c.flags.missedRest ? 1 : 0) + (c.flags.seventhDay ? 1 : 0);
+      }
+    });
+    document.getElementById("kpi-gross").textContent = FS.money0(totGross);
+    document.getElementById("kpi-ot").textContent = h1(totOtDt);
+    document.getElementById("kpi-flags").textContent = totFlags;
+
+    document.getElementById("appr-rows").innerHTML = subs.map(function (card) {
+      var emp = EMP[card.empId];
+      var c = computeCard(card);
+      return '<tr class="clickable" data-card="' + card.id + '">' +
+        '<td><b>' + emp.name + '</b><div class="small muted">' + card.id + ' · ' + c.group + '</div></td>' +
+        '<td>' + card.week + '</td>' +
+        '<td class="num">' + h1(c.reg) + '</td>' +
+        '<td class="num" style="color:' + (c.ot ? 'var(--warn)' : 'inherit') + '">' + h1(c.ot) + '</td>' +
+        '<td class="num" style="color:' + (c.dt ? 'var(--bad)' : 'inherit') + '">' + h1(c.dt) + '</td>' +
+        '<td class="num"><b>' + FS.money(c.gross) + '</b></td>' +
+        '<td>' + flagBadges(c) + '</td>' +
+        '<td>' + statusBadge(card.status) + '</td>' +
+        '</tr>';
+    }).join('');
+
+    // Team
+    document.getElementById("team-rows").innerHTML = Object.keys(EMP).map(function (k) {
+      var e = EMP[k];
+      var card = DB.cards.filter(function (c) { return c.empId === k; })[0];
+      var st = card ? card.status : "No card";
+      return '<tr><td><b>' + e.name + '</b></td>' +
+        '<td><span class="badge muted">' + e.group + '</span></td>' +
+        '<td class="num">' + FS.money(RATES[e.group]) + '</td>' +
+        '<td class="num">' + e.vac.toFixed(1) + ' h</td>' +
+        '<td>' + (card ? statusBadge(st) : '<span class="muted">—</span>') + '</td></tr>';
+    }).join('');
+
+    // Activity
+    document.getElementById("act-log").innerHTML = DB.activity.map(function (a) {
+      return '<li class="done"><span class="node"></span><div class="tl-t">' + FS.esc(a[0]) + '</div><div class="tl-s">' + a[1] + '</div></li>';
+    }).join('');
+  }
+
+  // ---------- Card drawer (admin) ----------
+  function openCard(id) {
+    var card = DB.cards.find(function (c) { return c.id === id; });
+    if (!card) return;
+    var emp = EMP[card.empId];
+    var c = computeCard(card);
+
+    var dayRows = card.days.map(function (d, i) {
+      var h = dayHours(d);
+      if (h <= 0) return '<tr><td>' + DAYS[i] + '</td><td colspan="3" class="muted">Off</td><td class="num">—</td></tr>';
+      return '<tr><td><b>' + DAYS[i] + '</b><div class="small muted">' + d.job + '</div></td>' +
+        '<td>' + fmt12(d.in) + '</td><td>' + (d.lunchMin ? d.lunchMin + 'm' : '—') + '</td><td>' + fmt12(d.out) + '</td>' +
+        '<td class="num">' + h1(h) + '</td></tr>';
+    }).join('');
+
+    var actions = card.status === "Submitted"
+      ? '<div class="row" style="margin-top:14px"><button class="btn btn-ghost btn-sm" data-reject="' + card.id + '">Reject (reason)</button>' +
+        '<button class="btn btn-primary btn-sm spacer" data-approve="' + card.id + '">✓ Approve</button></div>'
+      : '<div class="badge ' + (card.status === "Approved" ? "ok" : "bad") + '" style="margin-top:14px;width:100%;justify-content:center;padding:.6rem">' +
+        (card.status === "Approved" ? "✓ Approved by Dana" : "Rejected") + '</div>';
+
+    document.getElementById("cd-title").textContent = emp.name + " · " + card.id;
+    document.getElementById("cd-body").innerHTML =
+      '<div class="row" style="margin-bottom:12px">' + statusBadge(card.status) +
+        '<span class="spacer small muted">' + c.group + ' · ' + FS.money(c.rate) + '/hr · Week ' + card.week + '</span></div>' +
+      '<div class="row wrap" style="gap:6px;margin-bottom:12px">' + flagBadges(c) + '</div>' +
+      '<table class="t"><thead><tr><th>Day</th><th>In</th><th>Lunch</th><th>Out</th><th class="num">Hrs</th></tr></thead><tbody>' +
+        dayRows +
+      '</tbody></table>' +
+      '<p class="section-title" style="font-size:.95rem">Tier breakdown</p>' +
+      '<table class="t">' +
+        '<tr><td>Straight (REG)</td><td class="num">' + h1(c.reg) + ' h</td><td class="num">' + FS.money(c.reg * c.rate) + '</td></tr>' +
+        '<tr><td>Overtime (1.5×)</td><td class="num">' + h1(c.ot) + ' h</td><td class="num">' + FS.money(c.ot * c.rate * 1.5) + '</td></tr>' +
+        '<tr><td>Double-time (2.0×)</td><td class="num">' + h1(c.dt) + ' h</td><td class="num">' + FS.money(c.dt * c.rate * 2) + '</td></tr>' +
+        (c.premiumHours ? '<tr><td>Meal/rest premiums</td><td class="num">' + c.premiumHours + ' h</td><td class="num">' + FS.money(c.premiumHours * c.rate) + '</td></tr>' : '') +
+        '<tr style="font-weight:700;background:var(--d-surface-2)"><td>Gross pay</td><td class="num">' + h1(c.totalWorked) + ' h</td><td class="num">' + FS.money(c.gross) + '</td></tr>' +
+      '</table>' +
+      '<p class="section-title" style="font-size:.95rem">Signature</p>' +
+      '<div class="sigpad">' + (card.signed ? '<b style="font-style:normal;color:var(--accent-deep)">✓ Signed — ' + emp.name + '</b>' : 'Not signed') + '</div>' +
+      actions +
+      '<p class="small muted" style="margin-top:14px">Prototype math — validate with a CA payroll professional before production.</p>';
+    FS.openDrawer("card-drawer");
+  }
+
+  function logActivity(msg, when) { DB.activity.unshift([msg, when || "now"]); }
+
+  function approveCard(id, silent) {
+    var card = DB.cards.find(function (c) { return c.id === id; });
+    if (!card || card.status !== "Submitted") return false;
+    card.status = "Approved";
+    logActivity("Dana approved " + id + " · " + EMP[card.empId].name);
+    return true;
+  }
+
+  // ============================================================
+  //  Role / view switching
+  // ============================================================
+  function setRole(role) {
+    var emp = role === "employee";
+    document.getElementById("view-employee").style.display = emp ? "" : "none";
+    document.getElementById("view-admin").style.display = emp ? "none" : "";
+    document.getElementById("role-av").textContent = emp ? FS.initials(EMP.miguel.name) : "DA";
+    document.getElementById("hdr-sub").textContent = emp
+      ? "Weekly card · auto OT / DT / meal & rest"
+      : "Office / Admin · Dana · payroll approvals";
+    if (emp) renderEmployee(); else renderAdmin();
+  }
+
+  // ============================================================
+  //  Events
+  // ============================================================
+  document.getElementById("role").addEventListener("change", function (e) { setRole(e.target.value); });
+
+  // live recompute on clock-out edit
+  document.getElementById("m-body").addEventListener("change", function (e) {
+    var inp = e.target.closest("[data-field]");
+    if (!inp) return;
+    var card = myCard();
+    var i = +inp.getAttribute("data-day");
+    card.days[i].out = inp.value;
+    renderEmployee();
+    FS.toast(DAYS[i] + " updated · totals recomputed");
+  });
+
+  document.addEventListener("click", function (e) {
+    // employee: toggle missed rest
+    if (e.target.closest("[data-toggle-rest]")) {
+      var card = myCard();
+      card.missedRest = !card.missedRest;
+      renderEmployee();
+      FS.toast(card.missedRest ? "Missed-rest attestation · +1h premium" : "Attestation removed");
+      return;
+    }
+    // employee: sign
+    var sp = e.target.closest("[data-sign]");
+    if (sp) {
+      var c0 = myCard();
+      c0.signed = true;
+      renderEmployee();
+      FS.toast("Signature captured");
+      return;
+    }
+    // employee: save draft
+    if (e.target.closest("[data-save]")) { FS.toast("Draft saved"); return; }
+    // employee: submit
+    if (e.target.closest("[data-submit]")) {
+      var card2 = myCard();
+      if (!card2.signed) { FS.toast("Please sign before submitting"); return; }
+      card2.status = "Submitted";
+      logActivity(EMP[card2.empId].name + " submitted " + card2.id);
+      renderEmployee();
+      FS.toast("Card submitted to payroll");
+      return;
+    }
+    // employee: PTO
+    if (e.target.closest("[data-pto]")) { FS.toast("Time-off request sent to Dana"); return; }
+
+    // admin: row -> drawer
+    var row = e.target.closest("[data-card]");
+    if (row) { openCard(row.getAttribute("data-card")); return; }
+
+    // admin: approve
+    var ap = e.target.closest("[data-approve]");
+    if (ap) {
+      var id = ap.getAttribute("data-approve");
+      approveCard(id);
+      renderAdmin();
+      openCard(id);
+      FS.toast(id + " approved");
+      return;
+    }
+    // admin: reject
+    var rj = e.target.closest("[data-reject]");
+    if (rj) {
+      var rid = rj.getAttribute("data-reject");
+      var card3 = DB.cards.find(function (c) { return c.id === rid; });
+      if (card3) {
+        card3.status = "Rejected";
+        logActivity("Dana rejected " + rid + " · reason: missing job code");
+        renderAdmin();
+        openCard(rid);
+        FS.toast(rid + " rejected · reason logged");
+      }
+      return;
+    }
+    // admin: bulk approve
+    if (e.target.closest("#bulk-approve")) {
+      var n = 0;
+      DB.cards.forEach(function (c) { if (approveCard(c.id)) n++; });
+      renderAdmin();
+      FS.toast(n ? n + " card" + (n > 1 ? "s" : "") + " approved" : "Nothing pending");
+      return;
+    }
+  });
+
+  // ---------- Reset ----------
+  window.resetDemo = function () {
+    DB = seed();
+    document.getElementById("role").value = "employee";
+    FS.closeDrawer();
+    setRole("employee");
+    FS.toast("Demo reset");
+  };
+
+  setRole("employee");
+})();
+</script>
+</body>
+</html>

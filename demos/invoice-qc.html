@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Invoice QC Review — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="ag">
+
+<div class="demo-banner">
+  <a href="../index.html#agriculture">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional company</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Invoice QC Review</div>
+      <div class="app-header__sub">Verdant Grove Farms · <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● Pre-screening ERP invoices</span></div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <span class="small" style="color:rgba(255,255,255,.85)" id="last-loaded">Last loaded 7:45a</span>
+      <button class="btn btn-ghost btn-sm" id="refresh-btn" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)">↻ Refresh</button>
+    </div>
+  </header>
+
+  <div data-tabs>
+    <div class="tabs">
+      <button class="tab active" data-panel="p-queue">Review queue</button>
+      <button class="tab" data-panel="p-rules">Admin rules</button>
+    </div>
+
+    <!-- ============ REVIEW QUEUE ============ -->
+    <section class="panel active" id="p-queue">
+
+      <!-- Status filter cards -->
+      <div class="grid grid-4" id="status-cards" style="margin-top:4px">
+        <button class="stat filter-card active" data-filter="review" style="text-align:left;cursor:pointer;border:1.5px solid var(--accent)">
+          <div class="label">Needs review</div>
+          <div class="value" id="c-review" style="color:var(--warn)">0</div>
+          <div class="delta">Unaddressed violations</div>
+        </button>
+        <button class="stat filter-card" data-filter="ready" style="text-align:left;cursor:pointer">
+          <div class="label">Ready to send</div>
+          <div class="value" id="c-ready" style="color:var(--ok)">0</div>
+          <div class="delta">Clean or addressed</div>
+        </button>
+        <button class="stat filter-card" data-filter="addressed" style="text-align:left;cursor:pointer">
+          <div class="label">Addressed</div>
+          <div class="value" id="c-addressed" style="color:var(--info)">0</div>
+          <div class="delta">Reviewed, awaiting send</div>
+        </button>
+        <button class="stat filter-card" data-filter="all" style="text-align:left;cursor:pointer">
+          <div class="label">All active</div>
+          <div class="value" id="c-all">0</div>
+          <div class="delta">Total in queue</div>
+        </button>
+      </div>
+
+      <!-- Filter row -->
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="row wrap" style="gap:16px;align-items:flex-end">
+          <div>
+            <label class="lbl">Ship date from</label>
+            <input type="date" class="inp" value="2026-06-01" style="width:auto" />
+          </div>
+          <div>
+            <label class="lbl">Ship date to</label>
+            <input type="date" class="inp" value="2026-06-08" style="width:auto" />
+          </div>
+          <div>
+            <label class="lbl">Account Manager</label>
+            <select class="inp" id="mgr-filter" style="width:auto">
+              <option value="">All managers</option>
+              <option value="Alex Rivera">Alex Rivera</option>
+              <option value="Jordan Lee">Jordan Lee</option>
+              <option value="Sam Carter">Sam Carter</option>
+            </select>
+          </div>
+          <div class="spacer small muted" id="result-count"></div>
+        </div>
+      </div>
+
+      <!-- Bulk action bar (only when Ready filter active) -->
+      <div id="bulk-bar" class="card card-pad" style="margin-top:12px;display:none;background:var(--accent-soft);border-color:var(--accent)">
+        <div class="row">
+          <span class="small" style="font-weight:600"><span id="bulk-count">0</span> selected</span>
+          <button class="btn btn-primary btn-sm spacer" id="bulk-done">✓ Mark selected as Done</button>
+        </div>
+      </div>
+
+      <!-- Invoice table -->
+      <div class="table-wrap" style="margin-top:12px">
+        <table class="t">
+          <thead>
+            <tr>
+              <th id="th-check" style="width:36px;display:none"><input type="checkbox" id="check-all" /></th>
+              <th>Status</th>
+              <th>Order #</th>
+              <th>Customer</th>
+              <th>Customer PO</th>
+              <th>Ship date</th>
+              <th>Account Mgr</th>
+              <th class="num">Lines</th>
+              <th>Issues</th>
+            </tr>
+          </thead>
+          <tbody id="inv-rows"></tbody>
+        </table>
+      </div>
+      <p class="small muted" id="empty-msg" style="display:none;text-align:center;padding:24px">No invoices match this filter.</p>
+    </section>
+
+    <!-- ============ ADMIN RULES ============ -->
+    <section class="panel" id="p-rules">
+      <div class="card card-pad">
+        <div class="row"><h3 style="margin:0">QC rule instances</h3><span class="spacer small muted">Toggling a rule re-evaluates the queue</span></div>
+        <p class="small muted" style="margin:6px 0 14px">Each rule is built from a reusable template (empty-field, zero-or-less, two-field-inconsistent, date-after-date). The ERP applies none of these on its own — this layer does.</p>
+        <div class="table-wrap" style="box-shadow:none;border:none">
+          <table class="t">
+            <thead><tr><th>Rule name</th><th>Template type</th><th>Severity</th><th>Active</th></tr></thead>
+            <tbody id="rule-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Invoice detail drawer -->
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="inv-drawer">
+  <div class="drawer__head">
+    <h3 style="margin:0" id="dd-title">Invoice</h3>
+    <button class="x" data-drawer-close>×</button>
+  </div>
+  <div class="drawer__body" id="dd-body"></div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  var m = FS.money;
+
+  // ---------- Rule definitions ----------
+  var RULES = [
+    { id: "po",      name: "Missing Customer PO",          tmpl: "empty-field",            sev: "warn", active: true },
+    { id: "fob",     name: "$0 FOB Price",                 tmpl: "zero-or-less",           sev: "bad",  active: true },
+    { id: "consign", name: "Consign price not zero",       tmpl: "two-field-inconsistent", sev: "warn", active: true },
+    { id: "modship", name: "Order modified after shipping",tmpl: "date-after-date",        sev: "info", active: true }
+  ];
+  var RULE_BY_ID = {};
+  RULES.forEach(function (r) { RULE_BY_ID[r.id] = r; });
+
+  // ---------- Seeded invoices (fictional) ----------
+  // status: derived. workflow: "open" | "addressed" | "done"
+  var SEED = [
+    {
+      ord: "SO-48120", cust: "Coastal Foods", po: "CF-99431", terms: "Net 30", mgr: "Alex Rivera",
+      ship: "2026-06-02", workflow: "open",
+      lines: [
+        { sku: "PRD-ROMAINE", desc: "Romaine, 24ct case", qty: 40, fob: 18.50, consign: 0 },
+        { sku: "PRD-KALE",    desc: "Lacinato kale, 12ct", qty: 22, fob: 0.00,  consign: 0 },
+        { sku: "PRD-SPIN",    desc: "Baby spinach, 4lb",   qty: 15, fob: 9.25,  consign: 0 }
+      ]
+    },
+    {
+      ord: "SO-48121", cust: "Harbor Markets", po: "", terms: "Net 15", mgr: "Jordan Lee",
+      ship: "2026-06-02", workflow: "open",
+      lines: [
+        { sku: "PRD-CARROT", desc: "Rainbow carrots, 25lb", qty: 30, fob: 22.00, consign: 0 },
+        { sku: "PRD-BEET",   desc: "Red beets, bunched",    qty: 18, fob: 14.75, consign: 0 }
+      ]
+    },
+    {
+      ord: "SO-48122", cust: "Greenline Distributors", po: "GLD-20771", terms: "Net 30", mgr: "Sam Carter",
+      ship: "2026-06-03", workflow: "open",
+      lines: [
+        { sku: "PRD-AVO",   desc: "Avocado, 48ct (consign)", qty: 12, fob: 0.00, consign: 31.40 },
+        { sku: "PRD-LIME",  desc: "Persian lime, 40lb",      qty: 20, fob: 16.80, consign: 0 }
+      ]
+    },
+    {
+      ord: "SO-48123", cust: "Metro Produce", po: "MP-55810", terms: "Net 45", mgr: "Alex Rivera",
+      ship: "2026-06-03", workflow: "open", modAfterShip: true,
+      lines: [
+        { sku: "PRD-TOM",  desc: "Heirloom tomato, 15lb", qty: 28, fob: 27.50, consign: 0 },
+        { sku: "PRD-BASIL",desc: "Sweet basil, 1lb clam", qty: 10, fob: 6.40,  consign: 0 }
+      ]
+    },
+    {
+      ord: "SO-48124", cust: "Coastal Foods", po: "CF-99440", terms: "Net 30", mgr: "Jordan Lee",
+      ship: "2026-06-04", workflow: "open",
+      lines: [
+        { sku: "PRD-ARUG", desc: "Arugula, 4lb case", qty: 25, fob: 11.20, consign: 0 },
+        { sku: "PRD-CHARD",desc: "Rainbow chard, 12ct", qty: 14, fob: 13.00, consign: 0 }
+      ]
+    },
+    {
+      ord: "SO-48125", cust: "Harbor Markets", po: "", terms: "Net 30", mgr: "Sam Carter",
+      ship: "2026-06-05", workflow: "open", modAfterShip: true,
+      lines: [
+        { sku: "PRD-PEPP", desc: "Bell pepper mix, 25lb", qty: 32, fob: 0.00, consign: 0 },
+        { sku: "PRD-CUKE", desc: "English cucumber, 12ct", qty: 16, fob: 19.40, consign: 0 }
+      ]
+    },
+    {
+      ord: "SO-48126", cust: "Greenline Distributors", po: "GLD-20790", terms: "Net 15", mgr: "Alex Rivera",
+      ship: "2026-06-06", workflow: "open",
+      lines: [
+        { sku: "PRD-ONION", desc: "Yellow onion, 50lb", qty: 24, fob: 21.10, consign: 0 },
+        { sku: "PRD-GARL",  desc: "Garlic, 30lb",        qty: 8,  fob: 44.00, consign: 0 }
+      ]
+    },
+    {
+      ord: "SO-48127", cust: "Metro Produce", po: "MP-55822", terms: "Net 30", mgr: "Jordan Lee",
+      ship: "2026-06-07", workflow: "open",
+      lines: [
+        { sku: "PRD-MUSH", desc: "Cremini mushroom, 10lb", qty: 19, fob: 33.25, consign: 0 },
+        { sku: "PRD-SCAL", desc: "Scallion, bunched 48ct", qty: 12, fob: 17.60, consign: 0 }
+      ]
+    }
+  ];
+
+  var DATA = [];
+
+  function clone(arr) { return JSON.parse(JSON.stringify(arr)); }
+
+  // ---------- Rule evaluation ----------
+  // Returns array of { ruleId, label, sev, lineIdx (or null), field }
+  function evalInvoice(inv) {
+    var viol = [];
+    if (RULE_BY_ID.po.active && !inv.po) {
+      viol.push({ ruleId: "po", label: "Missing PO", sev: "warn", lineIdx: null, field: "po" });
+    }
+    if (RULE_BY_ID.fob.active) {
+      inv.lines.forEach(function (ln, i) {
+        if (ln.fob <= 0 && ln.consign <= 0) {
+          viol.push({ ruleId: "fob", label: "$0 FOB", sev: "bad", lineIdx: i, field: "fob" });
+        }
+      });
+    }
+    if (RULE_BY_ID.consign.active) {
+      inv.lines.forEach(function (ln, i) {
+        // Consign line should have FOB zero; non-consign should have consign zero.
+        if (ln.consign > 0 && ln.fob > 0) {
+          viol.push({ ruleId: "consign", label: "Consign≠0", sev: "warn", lineIdx: i, field: "consign" });
+        }
+      });
+    }
+    if (RULE_BY_ID.modship.active && inv.modAfterShip) {
+      viol.push({ ruleId: "modship", label: "Modified post-ship", sev: "info", lineIdx: null, field: "header" });
+    }
+    return viol;
+  }
+
+  // status: "review" (open + violations) | "addressed" | "ready" (clean or done)
+  function statusOf(inv) {
+    var v = evalInvoice(inv);
+    if (inv.workflow === "done") return "ready";
+    if (inv.workflow === "addressed") return "addressed";
+    if (v.length === 0) return "ready";
+    return "review";
+  }
+
+  function statusBadge(st) {
+    if (st === "review")    return '<span class="badge warn">● Needs review</span>';
+    if (st === "addressed") return '<span class="badge info">● Addressed</span>';
+    return '<span class="badge ok">● Ready to send</span>';
+  }
+
+  // ---------- State ----------
+  var activeFilter = "review";
+  var selected = {}; // ord -> true (bulk)
+
+  // ---------- Counts ----------
+  function recount() {
+    var c = { review: 0, ready: 0, addressed: 0, all: 0 };
+    DATA.forEach(function (inv) {
+      var st = statusOf(inv);
+      c.all++;
+      if (st === "review") c.review++;
+      if (st === "ready") c.ready++;
+      if (st === "addressed") c.addressed++;
+    });
+    document.getElementById("c-review").textContent = c.review;
+    document.getElementById("c-ready").textContent = c.ready;
+    document.getElementById("c-addressed").textContent = c.addressed;
+    document.getElementById("c-all").textContent = c.all;
+  }
+
+  // ---------- Render table ----------
+  function visibleInvoices() {
+    var mgr = document.getElementById("mgr-filter").value;
+    return DATA.filter(function (inv) {
+      if (mgr && inv.mgr !== mgr) return false;
+      var st = statusOf(inv);
+      if (activeFilter === "all") return true;
+      return st === activeFilter;
+    });
+  }
+
+  function issuesBadges(viol) {
+    if (!viol.length) return '<span class="badge ok">No issues</span>';
+    // unique labels
+    var seen = {}, out = [];
+    viol.forEach(function (v) {
+      if (seen[v.label]) return;
+      seen[v.label] = 1;
+      out.push('<span class="badge ' + v.sev + '" style="margin:1px 2px">' + v.label + '</span>');
+    });
+    return out.join("");
+  }
+
+  function renderTable() {
+    var rows = visibleInvoices();
+    var showCheck = (activeFilter === "ready");
+    document.getElementById("th-check").style.display = showCheck ? "" : "none";
+    document.getElementById("bulk-bar").style.display = showCheck ? "" : "none";
+
+    var tbody = document.getElementById("inv-rows");
+    tbody.innerHTML = rows.map(function (inv) {
+      var viol = evalInvoice(inv);
+      var st = statusOf(inv);
+      var isBad = (st === "review");
+      var checkCell = showCheck
+        ? '<td><input type="checkbox" class="row-check" data-ord="' + inv.ord + '"' + (selected[inv.ord] ? " checked" : "") + ' /></td>'
+        : '';
+      return '<tr class="clickable' + (isBad ? ' is-bad' : '') + '" data-ord="' + inv.ord + '">' +
+        checkCell +
+        '<td>' + statusBadge(st) + '</td>' +
+        '<td><b>' + inv.ord + '</b></td>' +
+        '<td>' + FS.esc(inv.cust) + '</td>' +
+        '<td>' + (inv.po ? FS.esc(inv.po) : '<span class="badge warn">— missing —</span>') + '</td>' +
+        '<td>' + inv.ship + '</td>' +
+        '<td>' + FS.esc(inv.mgr) + '</td>' +
+        '<td class="num">' + inv.lines.length + '</td>' +
+        '<td style="max-width:240px">' + issuesBadges(viol) + '</td>' +
+        '</tr>';
+    }).join("");
+
+    document.getElementById("empty-msg").style.display = rows.length ? "none" : "block";
+    document.getElementById("result-count").textContent = rows.length + " invoice" + (rows.length === 1 ? "" : "s") + " shown";
+    updateBulkCount();
+  }
+
+  // ---------- Bulk ----------
+  function updateBulkCount() {
+    var n = 0;
+    visibleInvoices().forEach(function (inv) { if (selected[inv.ord]) n++; });
+    document.getElementById("bulk-count").textContent = n;
+    document.getElementById("bulk-done").disabled = (n === 0);
+  }
+
+  // ---------- Drawer ----------
+  function lineViolated(inv, lineIdx, field) {
+    return evalInvoice(inv).some(function (v) { return v.lineIdx === lineIdx && v.field === field; });
+  }
+
+  function openInvoice(ord) {
+    var inv = DATA.find(function (x) { return x.ord === ord; });
+    if (!inv) return;
+    var viol = evalInvoice(inv);
+    var st = statusOf(inv);
+
+    document.getElementById("dd-title").textContent = inv.ord + " · " + inv.cust;
+
+    // Header block
+    var wf = inv.workflow === "done" ? '<span class="badge ok">✓ Done</span>'
+           : inv.workflow === "addressed" ? '<span class="badge info">Addressed</span>'
+           : '<span class="badge muted">Open</span>';
+
+    var header =
+      '<div class="row" style="margin-bottom:10px">' + statusBadge(st) + wf + '</div>' +
+      '<div class="card card-pad" style="box-shadow:none;background:var(--d-surface-2)">' +
+        '<div class="grid grid-2" style="gap:10px">' +
+          field("Customer", FS.esc(inv.cust)) +
+          field("Customer PO", inv.po ? FS.esc(inv.po) : '<span style="color:var(--warn)">— missing —</span>') +
+          field("Terms", inv.terms) +
+          field("Account Mgr", FS.esc(inv.mgr)) +
+          field("Ship date", inv.ship) +
+          field("Lines", inv.lines.length) +
+        '</div>' +
+      '</div>';
+
+    // Note (if any)
+    var noteHtml = inv.note ? '<p class="small" style="margin:10px 0 0"><b>Note:</b> ' + FS.esc(inv.note) + '</p>' : '';
+
+    // Action buttons
+    var actions =
+      '<div class="row wrap" style="margin:14px 0">' +
+        '<button class="btn btn-primary btn-sm" id="dd-addressed">Mark Addressed</button>' +
+        '<button class="btn btn-ghost btn-sm" id="dd-clear">Clear</button>' +
+        '<button class="btn btn-ghost btn-sm" id="dd-done">Mark Done</button>' +
+      '</div>';
+
+    // Issues panel
+    var issuesPanel;
+    if (viol.length) {
+      issuesPanel =
+        '<div class="section-title" style="margin:18px 0 8px;font-size:.95rem">Issues found <span class="badge bad">' + viol.length + '</span></div>' +
+        viol.map(function (v) {
+          var rule = RULE_BY_ID[v.ruleId];
+          var where = v.lineIdx === null ? "Header" : ("Line " + (v.lineIdx + 1) + " · " + inv.lines[v.lineIdx].sku);
+          return '<div class="card card-pad" style="box-shadow:none;padding:10px 12px;margin-bottom:8px;border-left:3px solid var(--' + v.sev + ')">' +
+            '<div class="row"><b class="small">' + rule.name + '</b><span class="spacer badge ' + v.sev + '">' + v.sev.toUpperCase() + '</span></div>' +
+            '<div class="small muted" style="margin-top:2px">' + where + '</div>' +
+            '</div>';
+        }).join("");
+    } else {
+      issuesPanel = '<div class="card card-pad" style="box-shadow:none;margin-top:14px;background:var(--ok-soft);border-color:var(--ok)"><b class="small" style="color:var(--ok)">✓ No rule violations — clean to send.</b></div>';
+    }
+
+    // Lines table with highlighted offending cells
+    var linesRows = inv.lines.map(function (ln, i) {
+      var fobBad = lineViolated(inv, i, "fob");
+      var conBad = lineViolated(inv, i, "consign");
+      return '<tr>' +
+        '<td>' + ln.sku + '</td>' +
+        '<td>' + FS.esc(ln.desc) + '</td>' +
+        '<td class="num">' + ln.qty + '</td>' +
+        '<td class="num"' + cellStyle(fobBad) + '>' + (ln.fob <= 0 ? '<b>$0.00</b>' : m(ln.fob)) + '</td>' +
+        '<td class="num"' + cellStyle(conBad) + '>' + m(ln.consign) + '</td>' +
+        '</tr>';
+    }).join("");
+
+    var poBad = (RULE_BY_ID.po.active && !inv.po);
+    var linesPanel =
+      '<div class="section-title" style="margin:18px 0 8px;font-size:.95rem">Order lines</div>' +
+      (poBad ? '<p class="small" style="margin:0 0 6px;color:var(--warn)">⚠ Customer PO required on this account but the header field is empty.</p>' : '') +
+      '<div class="table-wrap"><table class="t"><thead><tr><th>SKU</th><th>Description</th><th class="num">Qty</th><th class="num">FOB</th><th class="num">Consign</th></tr></thead><tbody>' +
+      linesRows + '</tbody></table></div>';
+
+    document.getElementById("dd-body").innerHTML = header + noteHtml + actions + issuesPanel + linesPanel;
+
+    // Wire action buttons
+    document.getElementById("dd-addressed").addEventListener("click", function () {
+      var note = prompt("Optional note (what was addressed?)", "");
+      inv.workflow = "addressed";
+      if (note) inv.note = note;
+      afterChange();
+      FS.toast(inv.ord + " marked Addressed");
+      openInvoice(ord);
+    });
+    document.getElementById("dd-clear").addEventListener("click", function () {
+      inv.workflow = "open";
+      delete inv.note;
+      afterChange();
+      FS.toast(inv.ord + " reset to Open");
+      openInvoice(ord);
+    });
+    document.getElementById("dd-done").addEventListener("click", function () {
+      inv.workflow = "done";
+      afterChange();
+      FS.toast(inv.ord + " marked Done");
+      FS.closeDrawer();
+    });
+
+    FS.openDrawer("inv-drawer");
+  }
+
+  function field(label, val) {
+    return '<div><div class="label small muted">' + label + '</div><div style="font-weight:650;color:var(--d-ink)">' + val + '</div></div>';
+  }
+  function cellStyle(bad) {
+    return bad ? ' style="background:var(--bad-soft);color:var(--bad);font-weight:700"' : '';
+  }
+
+  function afterChange() {
+    recount();
+    renderTable();
+  }
+
+  // ---------- Rules tab ----------
+  function renderRules() {
+    document.getElementById("rule-rows").innerHTML = RULES.map(function (r) {
+      return '<tr>' +
+        '<td><b>' + r.name + '</b></td>' +
+        '<td><span class="badge muted">' + r.tmpl + '</span></td>' +
+        '<td><span class="badge ' + r.sev + '">' + r.sev.toUpperCase() + '</span></td>' +
+        '<td><label class="switcher" style="cursor:pointer"><input type="checkbox" class="rule-toggle" data-rule="' + r.id + '"' + (r.active ? " checked" : "") + ' /> <span class="small">' + (r.active ? "Active" : "Off") + '</span></label></td>' +
+        '</tr>';
+    }).join("");
+  }
+
+  // ---------- Wire up ----------
+  document.getElementById("status-cards").addEventListener("click", function (e) {
+    var card = e.target.closest(".filter-card");
+    if (!card) return;
+    activeFilter = card.getAttribute("data-filter");
+    document.querySelectorAll(".filter-card").forEach(function (c) {
+      var on = c === card;
+      c.classList.toggle("active", on);
+      c.style.border = on ? "1.5px solid var(--accent)" : "";
+    });
+    if (activeFilter !== "ready") selected = {};
+    renderTable();
+  });
+
+  document.getElementById("mgr-filter").addEventListener("change", renderTable);
+
+  document.getElementById("refresh-btn").addEventListener("click", function () {
+    document.getElementById("last-loaded").textContent = "Last loaded just now";
+    FS.toast("Refreshed · 5 invoices re-evaluated");
+  });
+
+  // Row click → drawer (ignore clicks on checkboxes)
+  document.getElementById("inv-rows").addEventListener("click", function (e) {
+    if (e.target.closest(".row-check")) return;
+    var row = e.target.closest("[data-ord]");
+    if (row) openInvoice(row.getAttribute("data-ord"));
+  });
+
+  // Row checkbox toggling
+  document.getElementById("inv-rows").addEventListener("change", function (e) {
+    var cb = e.target.closest(".row-check");
+    if (cb) {
+      var ord = cb.getAttribute("data-ord");
+      if (cb.checked) selected[ord] = true; else delete selected[ord];
+      updateBulkCount();
+    }
+  });
+
+  document.getElementById("check-all").addEventListener("change", function (e) {
+    var on = e.target.checked;
+    visibleInvoices().forEach(function (inv) {
+      if (on) selected[inv.ord] = true; else delete selected[inv.ord];
+    });
+    renderTable();
+  });
+
+  document.getElementById("bulk-done").addEventListener("click", function () {
+    var n = 0;
+    visibleInvoices().forEach(function (inv) {
+      if (selected[inv.ord]) { inv.workflow = "done"; n++; }
+    });
+    selected = {};
+    afterChange();
+    FS.toast(n + " invoice" + (n === 1 ? "" : "s") + " marked Done");
+  });
+
+  // Rule toggles
+  document.getElementById("rule-rows").addEventListener("change", function (e) {
+    var cb = e.target.closest(".rule-toggle");
+    if (cb) {
+      RULE_BY_ID[cb.getAttribute("data-rule")].active = cb.checked;
+      renderRules();
+      afterChange();
+      FS.toast("Rules re-evaluated");
+    }
+  });
+
+  // ---------- Reset ----------
+  window.resetDemo = function () {
+    DATA = clone(SEED);
+    RULES.forEach(function (r) { r.active = true; });
+    activeFilter = "review";
+    selected = {};
+    document.getElementById("mgr-filter").value = "";
+    document.getElementById("last-loaded").textContent = "Last loaded 7:45a";
+    document.querySelectorAll(".filter-card").forEach(function (c) {
+      var on = c.getAttribute("data-filter") === "review";
+      c.classList.toggle("active", on);
+      c.style.border = on ? "1.5px solid var(--accent)" : "";
+    });
+    renderRules();
+    afterChange();
+    FS.toast("Demo reset");
+  };
+
+  function init() {
+    DATA = clone(SEED);
+    renderRules();
+    recount();
+    renderTable();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

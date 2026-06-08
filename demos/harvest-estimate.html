@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weekly Harvest Estimate — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="ag">
+
+<div class="demo-banner">
+  <a href="../index.html#agriculture">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional grower</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 2v8"/><path d="M5 10c0 4 3 6 7 6s7-2 7-6"/><path d="M12 22v-6"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Weekly Harvest Estimate</div>
+      <div class="app-header__sub">Tierra Verde Farms · Field Planning</div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <span class="badge" id="status-badge" style="background:rgba(255,255,255,.18);color:#fff">● Draft</span>
+    </div>
+  </header>
+
+  <div data-tabs>
+    <div class="tabs">
+      <button class="tab active" data-panel="p-est">Estimate</button>
+      <button class="tab" data-panel="p-sum">Summary</button>
+    </div>
+
+    <!-- ESTIMATE -->
+    <section class="panel active" id="p-est">
+
+      <!-- HEADER CONFIG PANEL -->
+      <div class="card card-pad">
+        <div class="row wrap" style="gap:18px;align-items:flex-end">
+          <div class="field" style="margin:0">
+            <label class="lbl" for="f-region">Region</label>
+            <select class="inp" id="f-region" style="width:auto">
+              <option>Coastal</option>
+              <option>Desert</option>
+              <option>Valley</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0">
+            <label class="lbl" for="f-year">Crop Year</label>
+            <select class="inp" id="f-year" style="width:auto">
+              <option>2026</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0">
+            <label class="lbl" for="f-commodity">Commodity</label>
+            <select class="inp" id="f-commodity" style="width:auto">
+              <option>Romaine</option>
+              <option>Broccoli</option>
+              <option>Iceberg</option>
+              <option>Artichoke</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0">
+            <label class="lbl" for="f-size">Size entry mode</label>
+            <select class="inp" id="f-size" style="width:auto">
+              <option value="none">None</option>
+              <option value="percent">Percent</option>
+              <option value="count">Count</option>
+            </select>
+          </div>
+          <div class="spacer small muted" style="text-align:right;line-height:1.4">
+            Created Jun 5, 2026 · 8:12 AM<br>
+            Modified <span id="modified-ts">Jun 8, 2026 · 9:41 AM</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="small muted" style="margin:14px 2px 4px">
+        Five-week rolling estimate. Total Cartons recompute automatically from Acres × Ctns/Acre.
+        Use <b>+ Add line</b> to append a block, and the Size entry mode to capture the size breakdown your buyer needs.
+      </p>
+
+      <div id="weeks"></div>
+
+      <!-- GRAND TOTAL STRIP -->
+      <div class="section-title">5-week grand total</div>
+      <div class="grid grid-3">
+        <div class="stat"><div class="label">Total acres</div><div class="value" id="g-acres">0</div></div>
+        <div class="stat"><div class="label">Total cartons (5-week)</div><div class="value" id="g-ctns">0</div></div>
+        <div class="stat"><div class="label">Avg ctns / acre</div><div class="value" id="g-avg">0</div></div>
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="row wrap" style="margin-top:22px;gap:10px">
+        <button class="btn btn-ghost" id="btn-save">💾 Save draft</button>
+        <button class="btn btn-primary" id="btn-submit">✓ Submit estimate</button>
+        <button class="btn btn-ghost" id="btn-pdf">📄 Generate PDF</button>
+        <span class="spacer small muted" id="lock-note"></span>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="panel" id="p-sum">
+      <div class="card card-pad">
+        <div class="row"><h3 style="margin:0">Cartons by week</h3><span class="spacer badge accent" id="sum-commodity"></span></div>
+        <div class="bars" id="sum-bars" style="margin-top:16px"></div>
+      </div>
+      <div class="card card-pad" style="margin-top:16px">
+        <h3 style="margin:0 0 10px">Week rollup</h3>
+        <div class="table-wrap" style="box-shadow:none;border:none">
+          <table class="t">
+            <thead><tr><th>Week of</th><th class="num">Lines</th><th class="num">Acres</th><th class="num">Cartons</th><th class="num">Avg ctns/ac</th></tr></thead>
+            <tbody id="sum-rows"></tbody>
+            <tfoot><tr><td>Total</td><td class="num" id="sf-lines"></td><td class="num" id="sf-acres"></td><td class="num" id="sf-ctns"></td><td class="num" id="sf-avg"></td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  var BLOCKS = ["North 12", "South 04", "East 09", "West 02", "Mesa 7"];
+
+  // Seed: 5 weeks, each an array of line rows {date, block, cut, acres, rate, s,m,l}
+  function seed() {
+    return [
+      { label: "Jun 9", lines: [
+        { date: "06/09", block: "North 12", cut: 1, acres: 22, rate: 1050, s: 25, m: 55, l: 20 },
+        { date: "06/10", block: "South 04", cut: 1, acres: 18, rate: 980,  s: 20, m: 60, l: 20 },
+        { date: "06/12", block: "Mesa 7",   cut: 2, acres: 14, rate: 910,  s: 30, m: 50, l: 20 }
+      ]},
+      { label: "Jun 16", lines: [
+        { date: "06/16", block: "East 09",  cut: 1, acres: 26, rate: 1120, s: 22, m: 58, l: 20 },
+        { date: "06/18", block: "West 02",  cut: 1, acres: 20, rate: 1005, s: 28, m: 52, l: 20 }
+      ]},
+      { label: "Jun 23", lines: [
+        { date: "06/23", block: "North 12", cut: 2, acres: 22, rate: 1080, s: 24, m: 56, l: 20 },
+        { date: "06/24", block: "Mesa 7",   cut: 1, acres: 16, rate: 940,  s: 26, m: 54, l: 20 },
+        { date: "06/26", block: "South 04", cut: 2, acres: 18, rate: 1000, s: 20, m: 55, l: 25 }
+      ]},
+      { label: "Jun 30", lines: [
+        { date: "06/30", block: "East 09",  cut: 2, acres: 26, rate: 1150, s: 21, m: 59, l: 20 },
+        { date: "07/02", block: "West 02",  cut: 2, acres: 20, rate: 1030, s: 27, m: 53, l: 20 }
+      ]},
+      { label: "Jul 7", lines: [
+        { date: "07/07", block: "North 12", cut: 3, acres: 22, rate: 1095, s: 23, m: 57, l: 20 },
+        { date: "07/09", block: "Mesa 7",   cut: 2, acres: 14, rate: 925,  s: 30, m: 50, l: 20 },
+        { date: "07/10", block: "South 04", cut: 3, acres: 18, rate: 1010, s: 22, m: 56, l: 22 }
+      ]}
+    ];
+  }
+
+  var weeks, sizeMode, submitted;
+  var nf = function (n) { return Math.round(n).toLocaleString("en-US"); };
+
+  // ---------- Render ----------
+  function blockOptions(sel) {
+    return BLOCKS.map(function (b) {
+      return '<option' + (b === sel ? ' selected' : '') + '>' + b + '</option>';
+    }).join('');
+  }
+
+  function sizeCols() {
+    if (sizeMode === "percent") return '<th class="num">%S</th><th class="num">%M</th><th class="num">%L</th>';
+    if (sizeMode === "count")   return '<th class="num">S ctns</th><th class="num">M ctns</th><th class="num">L ctns</th>';
+    return '';
+  }
+
+  function sizeCells(wi, li, ln) {
+    if (sizeMode === "none") return '';
+    if (sizeMode === "percent") {
+      var sum = (+ln.s) + (+ln.m) + (+ln.l);
+      var warn = sum !== 100 ? ' style="border-color:var(--warn);background:var(--warn-soft)"' : '';
+      var badge = sum !== 100 ? ' <span class="badge warn" title="Should sum to 100">Σ ' + sum + '</span>' : '';
+      function inp(k, v) {
+        return '<input class="inp num sz" type="number" min="0" max="100" data-w="' + wi + '" data-l="' + li + '" data-k="' + k + '" value="' + v + '"' + warn + ' style="width:62px;padding:.35rem .4rem;text-align:right">';
+      }
+      return '<td class="num">' + inp('s', ln.s) + '</td><td class="num">' + inp('m', ln.m) + '</td><td class="num">' + inp('l', ln.l) + badge + '</td>';
+    }
+    // count: derived carton split from size mix of total
+    var tot = ln.acres * ln.rate;
+    function c(k, v) { return '<td class="num" data-csplit="' + wi + '-' + li + '-' + k + '">' + nf(tot * v / 100) + '</td>'; }
+    return c('s', ln.s) + c('m', ln.m) + c('l', ln.l);
+  }
+
+  function renderWeeks() {
+    var dis = submitted ? ' disabled' : '';
+    var html = weeks.map(function (wk, wi) {
+      var sub = 0;
+      var rows = wk.lines.map(function (ln, li) {
+        var tot = ln.acres * ln.rate; sub += tot;
+        return '<tr>' +
+          '<td><input class="inp" value="' + ln.date + '" data-w="' + wi + '" data-l="' + li + '" data-k="date"' + dis + ' style="width:74px;padding:.35rem .5rem"></td>' +
+          '<td><select class="inp" data-w="' + wi + '" data-l="' + li + '" data-k="block"' + dis + ' style="width:auto;padding:.35rem .5rem">' + blockOptions(ln.block) + '</select></td>' +
+          '<td class="num"><input class="inp num" type="number" min="1" value="' + ln.cut + '" data-w="' + wi + '" data-l="' + li + '" data-k="cut"' + dis + ' style="width:54px;padding:.35rem .4rem;text-align:right"></td>' +
+          '<td class="num"><input class="inp num calc" type="number" min="0" step="0.5" value="' + ln.acres + '" data-w="' + wi + '" data-l="' + li + '" data-k="acres"' + dis + ' style="width:70px;padding:.35rem .4rem;text-align:right"></td>' +
+          '<td class="num"><input class="inp num calc" type="number" min="0" value="' + ln.rate + '" data-w="' + wi + '" data-l="' + li + '" data-k="rate"' + dis + ' style="width:80px;padding:.35rem .4rem;text-align:right"></td>' +
+          '<td class="num"><b data-tot="' + wi + '-' + li + '">' + nf(tot) + '</b></td>' +
+          sizeCells(wi, li, ln) +
+          '<td class="num"><button class="btn btn-danger btn-sm rm" data-w="' + wi + '" data-l="' + li + '"' + dis + ' title="Remove line">✕</button></td>' +
+        '</tr>';
+      }).join('');
+
+      var sizeSpan = sizeMode === "none" ? 0 : 3;
+      var footColspan = 5;
+      return '<div class="card card-pad" style="margin-top:16px">' +
+        '<div class="row"><h3 style="margin:0">Week of ' + wk.label + '</h3>' +
+          '<span class="spacer badge accent" data-wsub="' + wi + '">' + nf(sub) + ' ctns</span></div>' +
+        '<div class="table-wrap" style="box-shadow:none;border:none;margin-top:12px">' +
+          '<table class="t"><thead><tr>' +
+            '<th>Harvest date</th><th>Block</th><th class="num">Cut #</th><th class="num">Acres</th><th class="num">Ctns/Acre</th><th class="num">Total Cartons</th>' +
+            sizeCols() +
+            '<th></th>' +
+          '</tr></thead><tbody>' + rows + '</tbody>' +
+          '<tfoot><tr><td colspan="' + footColspan + '">Week subtotal</td>' +
+            '<td class="num"><b data-wfoot="' + wi + '">' + nf(sub) + '</b></td>' +
+            (sizeSpan ? '<td colspan="' + sizeSpan + '"></td>' : '') +
+            '<td></td></tr></tfoot>' +
+          '</table>' +
+        '</div>' +
+        (submitted ? '' : '<button class="btn btn-ghost btn-sm add" data-w="' + wi + '" style="margin-top:12px">+ Add line</button>') +
+      '</div>';
+    }).join('');
+    document.getElementById("weeks").innerHTML = html;
+    recompute();
+  }
+
+  // ---------- Live math ----------
+  function recompute() {
+    var gAcres = 0, gCtns = 0;
+    weeks.forEach(function (wk, wi) {
+      var sub = 0;
+      wk.lines.forEach(function (ln, li) {
+        var tot = (+ln.acres) * (+ln.rate);
+        sub += tot; gAcres += (+ln.acres); gCtns += tot;
+        var cell = document.querySelector('[data-tot="' + wi + '-' + li + '"]');
+        if (cell) cell.textContent = nf(tot);
+      });
+      var badge = document.querySelector('[data-wsub="' + wi + '"]');
+      if (badge) badge.textContent = nf(sub) + ' ctns';
+      var foot = document.querySelector('[data-wfoot="' + wi + '"]');
+      if (foot) foot.textContent = nf(sub);
+    });
+    document.getElementById("g-acres").textContent = nf(gAcres);
+    document.getElementById("g-ctns").textContent = nf(gCtns);
+    document.getElementById("g-avg").textContent = gAcres ? nf(gCtns / gAcres) : "0";
+    renderSummary(gAcres, gCtns);
+  }
+
+  function updateCountSplit(wi, li) {
+    var ln = weeks[wi].lines[li], tot = (+ln.acres) * (+ln.rate);
+    ["s", "m", "l"].forEach(function (k) {
+      var cell = document.querySelector('[data-csplit="' + wi + '-' + li + '-' + k + '"]');
+      if (cell) cell.textContent = nf(tot * (+ln[k]) / 100);
+    });
+  }
+
+  function renderSummary(gAcres, gCtns) {
+    document.getElementById("sum-commodity").textContent =
+      document.getElementById("f-commodity").value + " · " + document.getElementById("f-region").value;
+    var weekTotals = weeks.map(function (wk) {
+      var acres = 0, ctns = 0;
+      wk.lines.forEach(function (ln) { acres += (+ln.acres); ctns += (+ln.acres) * (+ln.rate); });
+      return { label: wk.label, lines: wk.lines.length, acres: acres, ctns: ctns };
+    });
+    var max = Math.max.apply(null, weekTotals.map(function (w) { return w.ctns; })) || 1;
+    document.getElementById("sum-bars").innerHTML = weekTotals.map(function (w) {
+      return '<div class="bar" style="height:' + (w.ctns / max * 100) + '%"><span>' + w.label + '</span></div>';
+    }).join('');
+    var lines = 0;
+    document.getElementById("sum-rows").innerHTML = weekTotals.map(function (w) {
+      lines += w.lines;
+      return '<tr><td><b>' + w.label + '</b></td><td class="num">' + w.lines + '</td><td class="num">' + nf(w.acres) +
+        '</td><td class="num">' + nf(w.ctns) + '</td><td class="num">' + (w.acres ? nf(w.ctns / w.acres) : '—') + '</td></tr>';
+    }).join('');
+    document.getElementById("sf-lines").textContent = lines;
+    document.getElementById("sf-acres").textContent = nf(gAcres);
+    document.getElementById("sf-ctns").textContent = nf(gCtns);
+    document.getElementById("sf-avg").textContent = gAcres ? nf(gCtns / gAcres) : "—";
+  }
+
+  function touchModified() {
+    document.getElementById("modified-ts").textContent = "Jun 8, 2026 · " +
+      new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  }
+
+  // ---------- Events ----------
+  var weeksEl = document.getElementById("weeks");
+
+  weeksEl.addEventListener("input", function (e) {
+    var t = e.target;
+    if (t.dataset.w === undefined) return;
+    var ln = weeks[+t.dataset.w].lines[+t.dataset.l];
+    var k = t.dataset.k;
+    if (k === "date" || k === "block") ln[k] = t.value;
+    else ln[k] = t.value === "" ? 0 : +t.value;
+    touchModified();
+    if (t.classList.contains("sz")) { renderWeeks(); return; } // re-eval % warning badge
+    recompute();
+    // In count mode the derived S/M/L carton split tracks acres/rate; update via change (after edit) to avoid focus loss
+    if (sizeMode === "count" && t.classList.contains("calc")) updateCountSplit(+t.dataset.w, +t.dataset.l);
+  });
+
+  weeksEl.addEventListener("click", function (e) {
+    if (submitted) return;
+    var add = e.target.closest(".add");
+    if (add) {
+      var wi = +add.dataset.w;
+      weeks[wi].lines.push({ date: weeks[wi].label.replace(" ", "/").replace("Jun", "06").replace("Jul", "07"), block: BLOCKS[0], cut: 1, acres: 10, rate: 1000, s: 25, m: 55, l: 20 });
+      touchModified(); renderWeeks();
+      FS.toast("Line added");
+      return;
+    }
+    var rm = e.target.closest(".rm");
+    if (rm) {
+      var w = +rm.dataset.w, l = +rm.dataset.l;
+      weeks[w].lines.splice(l, 1);
+      touchModified(); renderWeeks();
+      FS.toast("Line removed");
+    }
+  });
+
+  document.getElementById("f-size").addEventListener("change", function (e) {
+    sizeMode = e.target.value; renderWeeks();
+  });
+  ["f-region", "f-commodity", "f-year"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", function () { touchModified(); recompute(); });
+  });
+
+  function setStatus(s) {
+    var b = document.getElementById("status-badge");
+    b.textContent = "● " + s;
+  }
+
+  document.getElementById("btn-save").addEventListener("click", function () {
+    touchModified(); FS.toast("Draft saved");
+  });
+  document.getElementById("btn-submit").addEventListener("click", function () {
+    if (submitted) return;
+    submitted = true;
+    setStatus("Submitted");
+    document.getElementById("lock-note").textContent = "Inputs locked · estimate sent to planning system";
+    renderWeeks();
+    document.getElementById("btn-submit").disabled = true;
+    FS.toast("Submitted to planning system");
+  });
+  document.getElementById("btn-pdf").addEventListener("click", function () {
+    FS.toast("PDF generated");
+  });
+
+  // ---------- Init ----------
+  window.resetDemo = function () {
+    weeks = seed(); sizeMode = "none"; submitted = false;
+    document.getElementById("f-region").value = "Coastal";
+    document.getElementById("f-commodity").value = "Romaine";
+    document.getElementById("f-size").value = "none";
+    document.getElementById("btn-submit").disabled = false;
+    document.getElementById("lock-note").textContent = "";
+    setStatus("Draft");
+    document.getElementById("modified-ts").textContent = "Jun 8, 2026 · 9:41 AM";
+    renderWeeks();
+    FS.toast("Demo reset");
+  };
+
+  weeks = seed(); sizeMode = "none"; submitted = false;
+  setStatus("Draft");
+  renderWeeks();
+})();
+</script>
+</body>
+</html>

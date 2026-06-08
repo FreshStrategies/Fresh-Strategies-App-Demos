@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Planting Schedule & Reports — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="ag">
+
+<div class="demo-banner">
+  <a href="../index.html#agriculture">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional growers</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 2v8"/><path d="M12 10c-3 0-5-2-5-5 3 0 5 2 5 5z"/><path d="M12 10c3 0 5-2 5-5-3 0-5 2-5 5z"/><path d="M5 14h14l-1 8H6z"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Planting Schedule &amp; Reports</div>
+      <div class="app-header__sub">Coastview Farming Co. · <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● 2026 season</span></div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <label class="small" style="color:rgba(255,255,255,.85)">Season</label>
+      <select id="season" class="inp" style="width:auto;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)">
+        <option value="2026">2026</option>
+        <option value="2025">2025</option>
+      </select>
+    </div>
+  </header>
+
+  <div data-tabs>
+    <div class="tabs">
+      <button class="tab active" data-panel="p-sched">Schedule <span class="badge-num" id="tab-count">8</span></button>
+      <button class="tab" data-panel="p-master">Master Data</button>
+      <button class="tab" data-panel="p-reports">Reports</button>
+      <button class="tab" data-panel="p-demand">Demand</button>
+    </div>
+
+    <!-- SCHEDULE -->
+    <section class="panel active" id="p-sched">
+      <div class="grid grid-4">
+        <div class="stat"><div class="label">Total plantings</div><div class="value" id="st-count"></div><div class="delta up">▲ active season</div></div>
+        <div class="stat"><div class="label">Total acres</div><div class="value" id="st-acres"></div><div class="delta up">▲ planned</div></div>
+        <div class="stat"><div class="label">Active growers</div><div class="value" id="st-growers"></div></div>
+        <div class="stat"><div class="label">Regions</div><div class="value" id="st-regions"></div></div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="row wrap">
+          <h3 style="margin:0">Planting schedule</h3>
+          <span class="badge accent" id="sched-shown"></span>
+          <div class="spacer"></div>
+          <input id="filter-text" class="inp" placeholder="Filter crop, variety, grower, ranch…" style="width:240px" />
+          <select id="filter-region" class="inp" style="width:auto">
+            <option value="">All regions</option>
+            <option value="Coastal">Coastal</option>
+            <option value="Desert">Desert</option>
+            <option value="Valley">Valley</option>
+          </select>
+          <button class="btn btn-primary btn-sm" data-drawer-open="add-drawer">+ New planting</button>
+        </div>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:12px">
+          <table class="t">
+            <thead><tr>
+              <th>Crop</th><th>Variety</th><th>Grower</th><th>Ranch</th><th>Region</th>
+              <th class="num">Acres</th><th>Plant date</th><th>Est. harvest</th><th>Status</th>
+            </tr></thead>
+            <tbody id="sched-rows"></tbody>
+          </table>
+        </div>
+        <p class="small muted" id="sched-empty" style="display:none;text-align:center;padding:18px">No plantings match your filters.</p>
+      </div>
+    </section>
+
+    <!-- MASTER DATA -->
+    <section class="panel" id="p-master">
+      <p class="small muted">Reference lists that feed the schedule. Add or edit master records once, reuse everywhere.</p>
+      <div class="grid grid-2">
+        <div class="card card-pad">
+          <div class="row"><h3 style="margin:0">Crops</h3><span class="spacer badge muted" id="md-crops-n"></span></div>
+          <table class="t" id="md-crops" style="margin-top:8px"></table>
+          <button class="btn btn-ghost btn-sm" style="margin-top:12px" data-add="crop">+ Add crop</button>
+        </div>
+        <div class="card card-pad">
+          <div class="row"><h3 style="margin:0">Varieties</h3><span class="spacer badge muted" id="md-vars-n"></span></div>
+          <table class="t" id="md-vars" style="margin-top:8px"></table>
+          <button class="btn btn-ghost btn-sm" style="margin-top:12px" data-add="variety">+ Add variety</button>
+        </div>
+        <div class="card card-pad">
+          <div class="row"><h3 style="margin:0">Growers</h3><span class="spacer badge muted" id="md-growers-n"></span></div>
+          <table class="t" id="md-growers" style="margin-top:8px"></table>
+          <button class="btn btn-ghost btn-sm" style="margin-top:12px" data-add="grower">+ Add grower</button>
+        </div>
+        <div class="card card-pad">
+          <div class="row"><h3 style="margin:0">Regions</h3><span class="spacer badge muted" id="md-regions-n"></span></div>
+          <table class="t" id="md-regions" style="margin-top:8px"></table>
+          <button class="btn btn-ghost btn-sm" style="margin-top:12px" data-add="region">+ Add region</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- REPORTS -->
+    <section class="panel" id="p-reports">
+      <div class="grid grid-3">
+        <div class="card card-pad"><h4 style="margin:0 0 4px">Commodity report</h4><p class="small muted" style="margin:0 0 12px">Acres &amp; cartons rolled up by commodity.</p><button class="btn btn-ghost btn-sm" data-pdf="Commodity report">📄 Generate PDF</button></div>
+        <div class="card card-pad"><h4 style="margin:0 0 4px">Nursery report</h4><p class="small muted" style="margin:0 0 12px">Transplant orders by crop and seed date.</p><button class="btn btn-ghost btn-sm" data-pdf="Nursery report">📄 Generate PDF</button></div>
+        <div class="card card-pad"><h4 style="margin:0 0 4px">Ranch report</h4><p class="small muted" style="margin:0 0 12px">Plantings and acreage by ranch &amp; block.</p><button class="btn btn-ghost btn-sm" data-pdf="Ranch report">📄 Generate PDF</button></div>
+        <div class="card card-pad"><h4 style="margin:0 0 4px">Scouting report</h4><p class="small muted" style="margin:0 0 12px">Field scouting notes &amp; pest pressure.</p><button class="btn btn-ghost btn-sm" data-pdf="Scouting report">📄 Generate PDF</button></div>
+        <div class="card card-pad"><h4 style="margin:0 0 4px">Production report</h4><p class="small muted" style="margin:0 0 12px">Projected harvest windows &amp; yield.</p><button class="btn btn-ghost btn-sm" data-pdf="Production report">📄 Generate PDF</button></div>
+        <div class="card card-pad"><h4 style="margin:0 0 4px">Pre-harvest report</h4><p class="small muted" style="margin:0 0 12px">Maturity &amp; readiness 14 days out.</p><button class="btn btn-ghost btn-sm" data-pdf="Pre-harvest report">📄 Generate PDF</button></div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="row"><h3 style="margin:0">Commodity report</h3><span class="spacer badge accent">Preview · live data</span></div>
+        <p class="small muted" style="margin:4px 0 10px">Rolled up from the current schedule. Estimated cartons use a per-acre yield by commodity.</p>
+        <div class="table-wrap" style="box-shadow:none;border:none">
+          <table class="t">
+            <thead><tr><th>Commodity</th><th class="num">Plantings</th><th class="num">Total acres</th><th class="num">Yield / acre</th><th class="num">Est. cartons</th></tr></thead>
+            <tbody id="commodity-rows"></tbody>
+            <tfoot><tr><td>Total</td><td class="num" id="cr-pl"></td><td class="num" id="cr-ac"></td><td class="num">—</td><td class="num" id="cr-ct"></td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- DEMAND -->
+    <section class="panel" id="p-demand">
+      <div class="card card-pad">
+        <div class="row"><h3 style="margin:0">Weekly demand vs planned supply</h3><span class="spacer small muted">Cartons (000s) · week of Jun 15, 2026</span></div>
+        <p class="small muted" style="margin:4px 0 10px">Rows flagged when sales demand exceeds planned supply for the week.</p>
+        <div class="table-wrap" style="box-shadow:none;border:none">
+          <table class="t">
+            <thead><tr><th>Commodity</th><th class="num">Demand</th><th class="num">Supply</th><th class="num">Gap</th><th>Status</th></tr></thead>
+            <tbody id="demand-rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px">
+        <h3 style="margin:0 0 4px">Demand vs supply</h3>
+        <p class="small muted" style="margin:0 0 6px">Solid = demand, outlined = planned supply.</p>
+        <div class="bars" id="demand-bars" style="margin-top:14px"></div>
+        <div class="bar-legend">
+          <span><span class="dot" style="background:var(--accent)"></span> Demand</span>
+          <span><span class="dot" style="background:var(--accent-soft);border:1px solid var(--accent)"></span> Planned supply</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Add planting drawer -->
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="add-drawer">
+  <div class="drawer__head"><h3 style="margin:0">New planting</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body">
+    <div class="field"><label class="lbl">Crop</label>
+      <select id="f-crop" class="inp"></select></div>
+    <div class="field"><label class="lbl">Variety</label>
+      <input id="f-variety" class="inp" placeholder="e.g. Coastal Green" /></div>
+    <div class="field"><label class="lbl">Grower</label>
+      <select id="f-grower" class="inp"></select></div>
+    <div class="field"><label class="lbl">Ranch</label>
+      <select id="f-ranch" class="inp">
+        <option>North Ranch</option><option>Mesa Ranch</option><option>River Ranch</option>
+      </select></div>
+    <div class="field"><label class="lbl">Region</label>
+      <select id="f-region" class="inp">
+        <option>Coastal</option><option>Desert</option><option>Valley</option>
+      </select></div>
+    <div class="field"><label class="lbl">Acres</label>
+      <input id="f-acres" class="inp" type="number" min="1" value="40" /></div>
+    <div class="grid grid-2">
+      <div class="field"><label class="lbl">Plant date</label>
+        <input id="f-plant" class="inp" type="date" value="2026-06-20" /></div>
+      <div class="field"><label class="lbl">Est. harvest</label>
+        <input id="f-harvest" class="inp" type="date" value="2026-08-15" /></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn btn-primary" id="save-planting">Save planting</button>
+      <button class="btn btn-ghost" data-drawer-close>Cancel</button>
+    </div>
+    <p class="help">Saved as <b>Preliminary</b> — refine to Final once the grower confirms acreage.</p>
+  </div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  // ---------- Seeded data (fictional) ----------
+  var CROPS = ["Romaine", "Broccoli", "Iceberg", "Artichoke", "Spinach", "Celery"];
+  var GROWERS = ["Verde Valley", "Sunridge", "Bluefield", "Las Palmas"];
+  var YIELD = { Romaine: 900, Broccoli: 700, Iceberg: 850, Artichoke: 480, Spinach: 1100, Celery: 1300 };
+
+  var SEED = [
+    { crop:"Romaine",   variety:"Coastal Green",  grower:"Verde Valley", ranch:"North Ranch", region:"Coastal", acres:120, plant:"2026-05-12", harvest:"2026-07-10", status:"Final" },
+    { crop:"Broccoli",  variety:"Emerald Crown",  grower:"Sunridge",     ranch:"Mesa Ranch",  region:"Valley",  acres:86,  plant:"2026-05-20", harvest:"2026-08-02", status:"Preliminary" },
+    { crop:"Iceberg",   variety:"Crisphead 7",    grower:"Bluefield",    ranch:"River Ranch", region:"Coastal", acres:140, plant:"2026-05-28", harvest:"2026-07-30", status:"Updated" },
+    { crop:"Artichoke", variety:"Imperial Star",  grower:"Las Palmas",   ranch:"Mesa Ranch",  region:"Desert",  acres:64,  plant:"2026-06-02", harvest:"2026-09-15", status:"Final" },
+    { crop:"Spinach",   variety:"Bloomsdale XL",  grower:"Verde Valley", ranch:"River Ranch", region:"Valley",  acres:52,  plant:"2026-06-08", harvest:"2026-07-18", status:"Preliminary" },
+    { crop:"Celery",    variety:"Tall Utah",      grower:"Sunridge",     ranch:"North Ranch", region:"Coastal", acres:98,  plant:"2026-06-11", harvest:"2026-09-04", status:"Updated" },
+    { crop:"Romaine",   variety:"Desert Heart",   grower:"Las Palmas",   ranch:"Mesa Ranch",  region:"Desert",  acres:110, plant:"2026-06-15", harvest:"2026-08-12", status:"Preliminary" },
+    { crop:"Broccoli",  variety:"Marathon",       grower:"Bluefield",    ranch:"River Ranch", region:"Valley",  acres:74,  plant:"2026-06-18", harvest:"2026-09-01", status:"Final" }
+  ];
+
+  var DEMAND = [
+    { c:"Romaine",   d:42, s:48 },
+    { c:"Broccoli",  d:38, s:31 },
+    { c:"Iceberg",   d:55, s:60 },
+    { c:"Artichoke", d:14, s:12 },
+    { c:"Spinach",   d:22, s:26 },
+    { c:"Celery",    d:29, s:24 }
+  ];
+
+  var rows = [];
+
+  function statusBadge(s) {
+    var cls = s === "Final" ? "ok" : s === "Updated" ? "info" : "warn";
+    return '<span class="badge ' + cls + '">' + FS.esc(s) + '</span>';
+  }
+  function fmtDate(iso) {
+    var d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+  function num(n) { return Number(n).toLocaleString("en-US"); }
+
+  // ---------- Schedule ----------
+  function activeFilters() {
+    return {
+      text: document.getElementById("filter-text").value.trim().toLowerCase(),
+      region: document.getElementById("filter-region").value
+    };
+  }
+  function filtered() {
+    var f = activeFilters();
+    return rows.filter(function (r) {
+      if (f.region && r.region !== f.region) return false;
+      if (f.text) {
+        var hay = (r.crop + " " + r.variety + " " + r.grower + " " + r.ranch).toLowerCase();
+        if (hay.indexOf(f.text) === -1) return false;
+      }
+      return true;
+    });
+  }
+  function renderSchedule() {
+    var list = filtered();
+    document.getElementById("sched-rows").innerHTML = list.map(function (r) {
+      return '<tr><td><b>' + FS.esc(r.crop) + '</b></td><td>' + FS.esc(r.variety) + '</td><td>' + FS.esc(r.grower) +
+        '</td><td>' + FS.esc(r.ranch) + '</td><td>' + FS.esc(r.region) + '</td><td class="num">' + num(r.acres) +
+        '</td><td>' + fmtDate(r.plant) + '</td><td>' + fmtDate(r.harvest) + '</td><td>' + statusBadge(r.status) + '</td></tr>';
+    }).join('');
+    document.getElementById("sched-empty").style.display = list.length ? "none" : "block";
+    document.getElementById("sched-shown").textContent = list.length + " of " + rows.length + " shown";
+    renderStats();
+  }
+  function renderStats() {
+    var acres = 0, growers = {}, regions = {};
+    rows.forEach(function (r) { acres += r.acres; growers[r.grower] = 1; regions[r.region] = 1; });
+    document.getElementById("st-count").textContent = rows.length;
+    document.getElementById("st-acres").textContent = num(acres);
+    document.getElementById("st-growers").textContent = Object.keys(growers).length;
+    document.getElementById("st-regions").textContent = Object.keys(regions).length;
+    document.getElementById("tab-count").textContent = rows.length;
+  }
+
+  // ---------- Master data ----------
+  function masterTable(id, items, countId) {
+    document.getElementById(id).innerHTML = items.map(function (it) {
+      return '<tr><td>' + FS.esc(it.name) + '</td><td class="num"><span class="badge muted">' + it.n + '</span></td></tr>';
+    }).join('');
+    document.getElementById(countId).textContent = items.length;
+  }
+  function renderMaster() {
+    var crops = {}, vars = {}, growers = {}, regions = {};
+    rows.forEach(function (r) {
+      crops[r.crop] = (crops[r.crop] || 0) + 1;
+      vars[r.variety] = (vars[r.variety] || 0) + 1;
+      growers[r.grower] = (growers[r.grower] || 0) + 1;
+      regions[r.region] = (regions[r.region] || 0) + 1;
+    });
+    function toList(o) { return Object.keys(o).map(function (k) { return { name: k, n: o[k] }; }); }
+    masterTable("md-crops", toList(crops), "md-crops-n");
+    masterTable("md-vars", toList(vars), "md-vars-n");
+    masterTable("md-growers", toList(growers), "md-growers-n");
+    masterTable("md-regions", toList(regions), "md-regions-n");
+  }
+
+  // ---------- Reports (Commodity) ----------
+  function renderCommodity() {
+    var agg = {};
+    rows.forEach(function (r) {
+      var a = agg[r.crop] || (agg[r.crop] = { pl: 0, ac: 0 });
+      a.pl++; a.ac += r.acres;
+    });
+    var tPl = 0, tAc = 0, tCt = 0;
+    document.getElementById("commodity-rows").innerHTML = Object.keys(agg).map(function (k) {
+      var a = agg[k], y = YIELD[k] || 800, ct = a.ac * y;
+      tPl += a.pl; tAc += a.ac; tCt += ct;
+      return '<tr><td><b>' + FS.esc(k) + '</b></td><td class="num">' + a.pl + '</td><td class="num">' + num(a.ac) +
+        '</td><td class="num">' + num(y) + '</td><td class="num">' + num(ct) + '</td></tr>';
+    }).join('');
+    document.getElementById("cr-pl").textContent = tPl;
+    document.getElementById("cr-ac").textContent = num(tAc);
+    document.getElementById("cr-ct").textContent = num(tCt);
+  }
+
+  // ---------- Demand ----------
+  function renderDemand() {
+    document.getElementById("demand-rows").innerHTML = DEMAND.map(function (r) {
+      var gap = r.s - r.d, over = gap < 0;
+      return '<tr' + (over ? ' class="is-bad"' : '') + '><td><b>' + FS.esc(r.c) + '</b></td><td class="num">' + r.d +
+        '</td><td class="num">' + r.s + '</td><td class="num" style="color:' + (over ? 'var(--bad)' : 'var(--ok)') + '">' +
+        (gap >= 0 ? '+' : '') + gap + '</td><td>' + (over ? '<span class="badge bad">Short</span>' : '<span class="badge ok">Covered</span>') + '</td></tr>';
+    }).join('');
+    var max = 0;
+    DEMAND.forEach(function (r) { max = Math.max(max, r.d, r.s); });
+    document.getElementById("demand-bars").innerHTML = DEMAND.map(function (r) {
+      return '<div class="bar" style="height:' + (r.d / max * 100) + '%"><span>' + FS.esc(r.c).slice(0, 4) + '</span></div>' +
+        '<div class="bar alt" style="height:' + (r.s / max * 100) + '%"></div>';
+    }).join('');
+  }
+
+  // ---------- Add planting ----------
+  function fillSelect(id, items) {
+    document.getElementById(id).innerHTML = items.map(function (x) { return '<option>' + FS.esc(x) + '</option>'; }).join('');
+  }
+  function addPlanting() {
+    var acres = parseInt(document.getElementById("f-acres").value, 10) || 0;
+    var variety = document.getElementById("f-variety").value.trim() || "Unnamed";
+    rows.unshift({
+      crop: document.getElementById("f-crop").value,
+      variety: variety,
+      grower: document.getElementById("f-grower").value,
+      ranch: document.getElementById("f-ranch").value,
+      region: document.getElementById("f-region").value,
+      acres: acres,
+      plant: document.getElementById("f-plant").value || "2026-06-20",
+      harvest: document.getElementById("f-harvest").value || "2026-08-15",
+      status: "Preliminary"
+    });
+    renderAll();
+    FS.closeDrawer();
+    FS.toast("Planting added — " + acres + " ac");
+    document.getElementById("f-variety").value = "";
+  }
+
+  // ---------- Wire up ----------
+  document.getElementById("filter-text").addEventListener("input", renderSchedule);
+  document.getElementById("filter-region").addEventListener("change", renderSchedule);
+  document.getElementById("save-planting").addEventListener("click", addPlanting);
+  document.getElementById("season").addEventListener("change", function () { FS.toast("Loaded " + this.value + " season"); });
+
+  document.addEventListener("click", function (e) {
+    var pdf = e.target.closest("[data-pdf]");
+    if (pdf) { FS.toast(pdf.getAttribute("data-pdf") + " — PDF generated"); }
+    var add = e.target.closest("[data-add]");
+    if (add) { FS.toast("Add " + add.getAttribute("data-add") + " — opening editor"); }
+  });
+
+  function renderAll() {
+    renderSchedule();
+    renderMaster();
+    renderCommodity();
+    renderDemand();
+  }
+
+  window.resetDemo = function () {
+    rows = SEED.map(function (r) { return Object.assign({}, r); });
+    document.getElementById("filter-text").value = "";
+    document.getElementById("filter-region").value = "";
+    document.getElementById("season").value = "2026";
+    renderAll();
+    FS.toast("Demo reset");
+  };
+
+  function init() {
+    rows = SEED.map(function (r) { return Object.assign({}, r); });
+    fillSelect("f-crop", CROPS);
+    fillSelect("f-grower", GROWERS);
+    renderAll();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

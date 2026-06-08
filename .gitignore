@@ -1,0 +1,7 @@
+# Local tooling
+.claude/
+.DS_Store
+Thumbs.db
+
+# Never publish the reference clones of client repos
+_repos/

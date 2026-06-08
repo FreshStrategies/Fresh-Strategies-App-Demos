@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Grower Block Prep — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="ag">
+
+<div class="demo-banner">
+  <a href="../index.html#agriculture">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional growers</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Grower Block Prep</div>
+      <div class="app-header__sub">Field Operations · ERP enrichment &amp; loader queue</div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● Loader online</span>
+    </div>
+  </header>
+
+  <div data-tabs>
+    <div class="tabs">
+      <button class="tab active" data-panel="p-pending">Pending blocks <span class="badge-num" id="pending-count">0</span></button>
+      <button class="tab" data-panel="p-loader">Loader status <span class="badge-num" id="loader-count">0</span></button>
+    </div>
+
+    <!-- PENDING BLOCKS -->
+    <section class="panel active" id="p-pending">
+      <div class="card card-pad">
+        <div class="row wrap">
+          <input class="inp" id="f-text" placeholder="Filter by block, name, or grower…" style="max-width:280px" />
+          <select class="inp" id="f-region" style="width:auto">
+            <option value="">All regions</option>
+            <option>Coastal</option>
+            <option>Desert</option>
+            <option>Valley</option>
+          </select>
+          <select class="inp" id="f-commodity" style="width:auto">
+            <option value="">All commodities</option>
+            <option>Romaine</option>
+            <option>Broccoli</option>
+            <option>Iceberg</option>
+            <option>Artichoke</option>
+          </select>
+          <span class="spacer small muted" id="filter-note"></span>
+        </div>
+
+        <div class="row wrap" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--d-border)">
+          <span class="small muted" style="font-weight:650">Bulk apply to selected →</span>
+          <select class="inp" id="b-settlement" style="width:auto">
+            <option value="">Settlement Group…</option>
+            <option>Coastal Conv Pool</option>
+            <option>Desert Org Pool</option>
+            <option>Valley Conv Pool</option>
+          </select>
+          <select class="inp" id="b-cost" style="width:auto">
+            <option value="">Cost Center…</option>
+            <option>CC-100 Coastal</option>
+            <option>CC-200 Desert</option>
+            <option>CC-300 Valley</option>
+          </select>
+          <select class="inp" id="b-contract" style="width:auto">
+            <option value="">Contract…</option>
+            <option>Contract A</option>
+            <option>Contract B</option>
+            <option>Contract C</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" id="bulk-apply">Apply to selected</button>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="margin-top:16px">
+        <table class="t">
+          <thead>
+            <tr>
+              <th style="width:34px"><input type="checkbox" id="check-all" /></th>
+              <th>Block</th>
+              <th>Region</th>
+              <th>Grower</th>
+              <th>Commodity</th>
+              <th class="num">Acres</th>
+              <th>Est. Harvest</th>
+              <th>Settlement Group</th>
+              <th>Cost Center</th>
+              <th>Contract</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="pending-rows"></tbody>
+        </table>
+      </div>
+
+      <div class="card card-pad row wrap" style="margin-top:16px">
+        <div>
+          <span class="small muted">Selection</span>
+          <div style="font-weight:700;font-size:1.05rem" id="action-counter">0 selected · 0 ready</div>
+        </div>
+        <button class="btn btn-primary spacer" id="queue-btn" disabled>Queue selected for ERP</button>
+      </div>
+    </section>
+
+    <!-- LOADER STATUS -->
+    <section class="panel" id="p-loader">
+      <div class="grid grid-3">
+        <div class="stat"><div class="label">Queued</div><div class="value" id="s-queued">0</div></div>
+        <div class="stat"><div class="label">Loaded today</div><div class="value" id="s-loaded">0</div></div>
+        <div class="stat"><div class="label">Failed</div><div class="value" style="color:var(--bad)" id="s-failed">0</div></div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px">
+        <h3 style="margin:0 0 4px">Recent loader runs</h3>
+        <p class="small muted" style="margin:0 0 12px">Automated ERP loader picks up queued blocks every 15 minutes. Failed runs can be re-queued.</p>
+        <div class="table-wrap" style="box-shadow:none;border:none">
+          <table class="t">
+            <thead>
+              <tr>
+                <th>Block ID</th>
+                <th>Queued at</th>
+                <th>Status</th>
+                <th class="num">Attempts</th>
+                <th>Message</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="loader-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  // ---------- Option lists ----------
+  var SETTLEMENT = ["Coastal Conv Pool", "Desert Org Pool", "Valley Conv Pool"];
+  var COST = ["CC-100 Coastal", "CC-200 Desert", "CC-300 Valley"];
+  var CONTRACT = ["Contract A", "Contract B", "Contract C"];
+  var esc = FS.esc;
+
+  // ---------- Seeded data (fictional) ----------
+  function seedPending() {
+    return [
+      { id: "BLK-2611", name: "North Ranch 12A", region: "Coastal", grower: "Verde Valley", commodity: "Romaine", acres: 24, harvest: "Jun 18" },
+      { id: "BLK-2612", name: "Mesa Ranch 04B", region: "Desert", grower: "Sunridge", commodity: "Iceberg", acres: 31, harvest: "Jun 21" },
+      { id: "BLK-2613", name: "Bluff View 07C", region: "Valley", grower: "Bluefield", commodity: "Broccoli", acres: 16, harvest: "Jun 24" },
+      { id: "BLK-2614", name: "South Ranch 02A", region: "Coastal", grower: "Sunridge", commodity: "Artichoke", acres: 12, harvest: "Jun 27" },
+      { id: "BLK-2615", name: "Mesa Ranch 09D", region: "Desert", grower: "Verde Valley", commodity: "Romaine", acres: 38, harvest: "Jun 19" },
+      { id: "BLK-2616", name: "River Bend 03B", region: "Valley", grower: "Bluefield", commodity: "Iceberg", acres: 27, harvest: "Jun 25" },
+      { id: "BLK-2617", name: "North Ranch 15E", region: "Coastal", grower: "Bluefield", commodity: "Broccoli", acres: 9, harvest: "Jun 30" },
+      { id: "BLK-2618", name: "Highland 06A", region: "Desert", grower: "Sunridge", commodity: "Broccoli", acres: 21, harvest: "Jul 02" },
+      { id: "BLK-2619", name: "Mesa Ranch 11F", region: "Valley", grower: "Verde Valley", commodity: "Artichoke", acres: 34, harvest: "Jun 22" }
+    ].map(function (b) {
+      return { id: b.id, name: b.name, region: b.region, grower: b.grower, commodity: b.commodity,
+        acres: b.acres, harvest: b.harvest, settlement: "", cost: "", contract: "", checked: false };
+    });
+  }
+  function seedLoader() {
+    return [
+      { id: "BLK-2604", queued: "08:12", status: "Loaded", attempts: 1, msg: "Posted to ERP · ref RCV-88120" },
+      { id: "BLK-2607", queued: "08:40", status: "Loaded", attempts: 1, msg: "Posted to ERP · ref RCV-88121" },
+      { id: "BLK-2609", queued: "09:03", status: "Failed", attempts: 2, msg: "Cost center CC-200 locked for prior period", re: true },
+      { id: "BLK-2610", queued: "09:21", status: "Pending", attempts: 0, msg: "Awaiting loader cycle" }
+    ];
+  }
+
+  var pending, loader;
+
+  // ---------- Pending table ----------
+  function isReady(b) { return b.settlement && b.cost && b.contract; }
+
+  function optionsHTML(list, current) {
+    var html = '<option value="">— select —</option>';
+    list.forEach(function (o) {
+      html += '<option' + (o === current ? ' selected' : '') + '>' + esc(o) + '</option>';
+    });
+    return html;
+  }
+
+  function matchesFilter(b) {
+    var txt = document.getElementById("f-text").value.trim().toLowerCase();
+    var reg = document.getElementById("f-region").value;
+    var com = document.getElementById("f-commodity").value;
+    if (reg && b.region !== reg) return false;
+    if (com && b.commodity !== com) return false;
+    if (txt) {
+      var hay = (b.id + " " + b.name + " " + b.grower).toLowerCase();
+      if (hay.indexOf(txt) === -1) return false;
+    }
+    return true;
+  }
+
+  function renderPending() {
+    var visible = pending.filter(matchesFilter);
+    var tb = document.getElementById("pending-rows");
+    if (!visible.length) {
+      tb.innerHTML = '<tr><td colspan="11" class="muted" style="text-align:center;padding:28px">No pending blocks match these filters.</td></tr>';
+    } else {
+      tb.innerHTML = visible.map(function (b) {
+        var ready = isReady(b);
+        var status = ready
+          ? '<span class="badge ok"><span class="dot ok"></span> Ready</span>'
+          : '<span class="badge muted"><span class="dot muted"></span> Incomplete</span>';
+        return '<tr data-id="' + b.id + '">' +
+          '<td><input type="checkbox" class="row-check" data-id="' + b.id + '"' + (b.checked ? ' checked' : '') + ' /></td>' +
+          '<td><b>' + esc(b.id) + '</b><div class="small muted">' + esc(b.name) + '</div></td>' +
+          '<td>' + esc(b.region) + '</td>' +
+          '<td>' + esc(b.grower) + '</td>' +
+          '<td>' + esc(b.commodity) + '</td>' +
+          '<td class="num">' + b.acres + '</td>' +
+          '<td>' + esc(b.harvest) + '</td>' +
+          '<td><select class="inp erp-sel" data-field="settlement" data-id="' + b.id + '">' + optionsHTML(SETTLEMENT, b.settlement) + '</select></td>' +
+          '<td><select class="inp erp-sel" data-field="cost" data-id="' + b.id + '">' + optionsHTML(COST, b.cost) + '</select></td>' +
+          '<td><select class="inp erp-sel" data-field="contract" data-id="' + b.id + '">' + optionsHTML(CONTRACT, b.contract) + '</select></td>' +
+          '<td>' + status + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    // header checkbox reflects visible selection
+    var allChecked = visible.length > 0 && visible.every(function (b) { return b.checked; });
+    document.getElementById("check-all").checked = allChecked;
+
+    // filter note
+    document.getElementById("filter-note").textContent =
+      visible.length === pending.length ? pending.length + " blocks" : "Showing " + visible.length + " of " + pending.length;
+
+    document.getElementById("pending-count").textContent = pending.length;
+    updateCounter();
+  }
+
+  function updateCounter() {
+    var sel = pending.filter(function (b) { return b.checked; });
+    var ready = sel.filter(isReady);
+    document.getElementById("action-counter").textContent =
+      sel.length + " selected · " + ready.length + " ready";
+    document.getElementById("queue-btn").disabled = ready.length === 0;
+  }
+
+  function byId(id) { return pending.filter(function (b) { return b.id === id; })[0]; }
+
+  // ---------- Loader table ----------
+  function renderLoader() {
+    var queued = loader.filter(function (r) { return r.status === "Pending"; }).length;
+    var loaded = loader.filter(function (r) { return r.status === "Loaded"; }).length;
+    var failed = loader.filter(function (r) { return r.status === "Failed"; }).length;
+    document.getElementById("s-queued").textContent = queued;
+    document.getElementById("s-loaded").textContent = loaded;
+    document.getElementById("s-failed").textContent = failed;
+    document.getElementById("loader-count").textContent = queued;
+
+    document.getElementById("loader-rows").innerHTML = loader.map(function (r, i) {
+      var cls = r.status === "Loaded" ? "ok" : r.status === "Failed" ? "bad" : "info";
+      var badge = '<span class="badge ' + cls + '">' + esc(r.status) + '</span>';
+      var action = r.status === "Failed"
+        ? '<button class="btn btn-ghost btn-sm requeue-btn" data-idx="' + i + '">Re-queue</button>'
+        : '';
+      return '<tr' + (r.status === "Failed" ? ' class="is-bad"' : '') + '>' +
+        '<td><b>' + esc(r.id) + '</b></td>' +
+        '<td>' + esc(r.queued) + '</td>' +
+        '<td>' + badge + '</td>' +
+        '<td class="num">' + r.attempts + '</td>' +
+        '<td class="small">' + esc(r.msg) + '</td>' +
+        '<td>' + action + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // ---------- Events ----------
+  ["f-text", "f-region", "f-commodity"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", renderPending);
+  });
+
+  document.getElementById("check-all").addEventListener("change", function (e) {
+    var on = e.target.checked;
+    pending.filter(matchesFilter).forEach(function (b) { b.checked = on; });
+    renderPending();
+  });
+
+  document.getElementById("pending-rows").addEventListener("change", function (e) {
+    var chk = e.target.closest(".row-check");
+    if (chk) {
+      var b = byId(chk.getAttribute("data-id"));
+      if (b) b.checked = chk.checked;
+      renderPending();
+      return;
+    }
+    var sel = e.target.closest(".erp-sel");
+    if (sel) {
+      var blk = byId(sel.getAttribute("data-id"));
+      if (blk) blk[sel.getAttribute("data-field")] = sel.value;
+      renderPending();
+    }
+  });
+
+  document.getElementById("bulk-apply").addEventListener("click", function () {
+    var s = document.getElementById("b-settlement").value;
+    var c = document.getElementById("b-cost").value;
+    var ct = document.getElementById("b-contract").value;
+    if (!s && !c && !ct) { FS.toast("Pick at least one field to apply"); return; }
+    var sel = pending.filter(function (b) { return b.checked; });
+    if (!sel.length) { FS.toast("Select rows first"); return; }
+    sel.forEach(function (b) {
+      if (s) b.settlement = s;
+      if (c) b.cost = c;
+      if (ct) b.contract = ct;
+    });
+    renderPending();
+    FS.toast("Applied to " + sel.length + " block" + (sel.length === 1 ? "" : "s"));
+  });
+
+  document.getElementById("queue-btn").addEventListener("click", function () {
+    var ready = pending.filter(function (b) { return b.checked && isReady(b); });
+    if (!ready.length) return;
+    var now = new Date();
+    var hh = String(now.getHours()).padStart(2, "0");
+    var mm = String(now.getMinutes()).padStart(2, "0");
+    ready.forEach(function (b) {
+      loader.unshift({ id: b.id, queued: hh + ":" + mm, status: "Pending", attempts: 0, msg: "Awaiting loader cycle" });
+    });
+    var ids = ready.map(function (b) { return b.id; });
+    pending = pending.filter(function (b) { return ids.indexOf(b.id) === -1; });
+    renderPending();
+    renderLoader();
+    FS.toast(ready.length + " block" + (ready.length === 1 ? "" : "s") + " queued");
+  });
+
+  document.getElementById("loader-rows").addEventListener("click", function (e) {
+    var btn = e.target.closest(".requeue-btn");
+    if (!btn) return;
+    var r = loader[+btn.getAttribute("data-idx")];
+    r.status = "Pending";
+    r.attempts += 1;
+    r.msg = "Re-queued · awaiting loader cycle";
+    delete r.re;
+    renderLoader();
+    FS.toast(r.id + " re-queued");
+  });
+
+  // ---------- Reset / init ----------
+  window.resetDemo = function () {
+    document.getElementById("f-text").value = "";
+    document.getElementById("f-region").value = "";
+    document.getElementById("f-commodity").value = "";
+    document.getElementById("b-settlement").value = "";
+    document.getElementById("b-cost").value = "";
+    document.getElementById("b-contract").value = "";
+    init();
+    FS.toast("Demo reset");
+  };
+
+  function init() {
+    pending = seedPending();
+    loader = seedLoader();
+    renderPending();
+    renderLoader();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

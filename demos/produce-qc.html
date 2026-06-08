@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Produce QC Inspection — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="ag">
+
+<div class="demo-banner">
+  <a href="../index.html#agriculture">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · AQL sampling</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Produce QC</div>
+      <div class="app-header__sub" data-i18n="sub">AQL sampling · inspection & disposition</div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="pill-toggle" id="lang"><button class="active" data-lang="en">EN</button><button data-lang="es">ES</button></div>
+    <div class="switcher" style="margin-left:10px">
+      <span class="avatar" id="role-av">IN</span>
+      <select id="role" class="inp" style="width:auto;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)">
+        <option value="inspector" selected>Inspector</option>
+        <option value="supervisor">Supervisor</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Inspector (mobile) -->
+  <div class="phone-stage" id="inspector-stage">
+    <div class="phone">
+      <div class="phone__screen">
+        <div class="phone__notch"></div>
+        <div class="m-header">
+          <span class="avatar" id="m-av">IN</span>
+          <div><h3 id="m-title">New Inspection</h3><div class="small" style="color:rgba(255,255,255,.8)">D. Marquez · Inspector</div></div>
+        </div>
+        <div class="m-body" id="m-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supervisor (desktop) -->
+  <div id="supervisor-stage" style="display:none;padding-top:18px"></div>
+</div>
+
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="insp-drawer">
+  <div class="drawer__head"><h3 style="margin:0" id="dr-title">Inspection</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body" id="dr-body"></div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  // ---------- i18n ----------
+  var T = {
+    en: { sub:"AQL sampling · inspection & disposition", scan:"Scan tag", major:"Major defects", minor:"Minor defects",
+          sample:"Sample size", submit:"Submit inspection", pass:"PASS", fail:"FAIL", context:"Inspection context" },
+    es: { sub:"Muestreo AQL · inspección y disposición", scan:"Escanear etiqueta", major:"Defectos mayores", minor:"Defectos menores",
+          sample:"Tamaño de muestra", submit:"Enviar inspección", pass:"APROBADO", fail:"RECHAZADO", context:"Contexto de inspección" }
+  };
+  var lang = "en";
+  function t(k){ return T[lang][k] || k; }
+
+  var CONTEXTS = ["Pound receiving", "Inventory rotation", "Pre-ship test & hold"];
+
+  // ---------- Inspector working state ----------
+  function freshState(){
+    return { scanned:false, tag:null, grower:null, block:null, commodity:null, lot:null,
+             context:CONTEXTS[0], sample:50, majors:0, minors:0,
+             photos:[false,false,false,false] };
+  }
+  var S = freshState();
+
+  // ---------- Scoring ----------
+  function failRate(s){ return (s.majors*3 + s.minors*1) / Math.max(1, s.sample); }
+  function isPass(s){ return !(s.majors > 0 && failRate(s) > 0.07); }
+  function score(s){
+    // 100 minus weighted defect impact, floored
+    var pct = Math.max(0, 100 - failRate(s) * 100);
+    return Math.round(pct * 10) / 10;
+  }
+
+  // ---------- Supervisor seed data ----------
+  function seedRecent(){
+    return [
+      { tag:"TAG-4471", commodity:"Romaine",   block:"North 12", context:"Pound receiving",     score:97.8, majors:0, minors:2, result:"PASS" },
+      { tag:"TAG-4468", commodity:"Broccoli",  block:"South 04", context:"Inventory rotation",   score:88.2, majors:2, minors:3, result:"FAIL" },
+      { tag:"TAG-4465", commodity:"Iceberg",   block:"East 09",  context:"Pre-ship test & hold", score:99.0, majors:0, minors:1, result:"PASS" },
+      { tag:"TAG-4462", commodity:"Artichoke", block:"West 02",  context:"Pound receiving",      score:91.6, majors:1, minors:4, result:"FAIL" },
+      { tag:"TAG-4459", commodity:"Spinach",   block:"North 14", context:"Inventory rotation",   score:98.4, majors:0, minors:1, result:"PASS" },
+      { tag:"TAG-4456", commodity:"Romaine",   block:"East 11",  context:"Pre-ship test & hold", score:96.0, majors:0, minors:3, result:"PASS" }
+    ];
+  }
+  var recent = seedRecent();
+
+  var STATS = { today:24, passRate:"91.7%", holds:3, avg:96.2 };
+  // defect counts by commodity for the bar chart
+  var COMMODITIES = ["Romaine","Broccoli","Iceberg","Artichoke","Spinach"];
+  var defectsByCommodity = { Romaine:4, Broccoli:9, Iceberg:2, Artichoke:7, Spinach:3 };
+
+  // ============================================================
+  //  INSPECTOR VIEW (mobile)
+  // ============================================================
+  function badgeBig(pass){
+    return '<span class="badge '+(pass?'ok':'bad')+'" style="font-size:1.3rem;padding:.4rem 1.1rem;border-radius:12px">'+
+      (pass?'✓ '+t('pass'):'✕ '+t('fail'))+'</span>';
+  }
+
+  function renderInspector(){
+    var b = document.getElementById("m-body");
+    var html = "";
+
+    // 1. Scan / context card
+    if (!S.scanned){
+      html += '<div class="card card-pad" style="text-align:center">'+
+        '<div style="font-size:2.4rem;line-height:1">🏷️</div>'+
+        '<div class="ti" style="margin-top:6px">'+t('scan')+'</div>'+
+        '<p class="small muted" style="margin:6px 0 14px">Scan the Code-39 lot tag to load grower & block context.</p>'+
+        '<button class="btn btn-primary" style="width:100%;justify-content:center" data-scan>📷 '+t('scan')+'</button></div>';
+    } else {
+      html += '<div class="card card-pad">'+
+        '<div class="row"><span class="badge accent">'+S.tag+'</span><span class="spacer small muted">Lot '+S.lot+'</span></div>'+
+        '<div class="ti" style="margin-top:8px">'+S.grower+'</div>'+
+        '<div class="su small muted">'+S.block+' · '+S.commodity+'</div></div>';
+
+      // 2. Context selector (pills)
+      html += '<p class="section-title" style="font-size:.95rem">'+t('context')+'</p>'+
+        '<div class="row wrap" style="gap:8px">'+
+        CONTEXTS.map(function(c){
+          var on = c===S.context;
+          return '<button class="btn '+(on?'btn-primary':'btn-ghost')+' btn-sm" data-context="'+c+'">'+c+'</button>';
+        }).join('')+'</div>';
+
+      // 3. AQL sampling
+      html += '<div class="card card-pad" style="margin-top:14px">'+
+        '<div class="field" style="margin-bottom:14px"><label class="lbl">'+t('sample')+'</label>'+
+          '<input class="inp" id="sample-inp" type="number" min="1" value="'+S.sample+'"><div class="help">AQL 2.5 · single sampling plan</div></div>'+
+        '<div class="row" style="justify-content:space-between;margin-bottom:12px"><div><div class="lbl" style="margin:0">'+t('major')+'</div><div class="small muted">weighted ×3</div></div>'+
+          counter('major', S.majors)+'</div>'+
+        '<div class="row" style="justify-content:space-between"><div><div class="lbl" style="margin:0">'+t('minor')+'</div><div class="small muted">weighted ×1</div></div>'+
+          counter('minor', S.minors)+'</div></div>';
+
+      // 4. Live score + disposition
+      var pass = isPass(S);
+      html += '<div class="card card-pad" style="margin-top:14px;text-align:center;background:'+(pass?'var(--ok-soft)':'var(--bad-soft)')+';border-color:'+(pass?'var(--ok)':'var(--bad)')+'">'+
+        badgeBig(pass)+
+        '<div style="margin-top:10px;font-size:2rem;font-weight:800;color:var(--d-ink)">'+score(S).toFixed(1)+'</div>'+
+        '<div class="small muted">score · fail-rate '+(failRate(S)*100).toFixed(1)+'% (threshold 7.0%)</div></div>';
+
+      // 5. Photo tiles
+      html += '<p class="section-title" style="font-size:.95rem">Evidence photos</p>'+
+        '<div class="row" style="gap:8px">'+
+        S.photos.map(function(cap, i){
+          return '<div data-photo="'+i+'" style="flex:1;aspect-ratio:1;border-radius:10px;display:grid;place-items:center;cursor:pointer;'+
+            'border:1.5px '+(cap?'solid var(--ok)':'dashed var(--d-border-strong)')+';background:'+(cap?'var(--ok-soft)':'var(--d-surface-2)')+';font-size:1.4rem">'+
+            (cap?'<span style="color:var(--ok);font-weight:800">✓</span>':'📷')+'</div>';
+        }).join('')+'</div>';
+
+      // 6. Submit
+      html += '<button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:16px" data-submit>'+t('submit')+' →</button>'+
+        '<button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:8px" data-rescan>↺ Scan a different tag</button>';
+    }
+
+    b.innerHTML = html;
+  }
+
+  function counter(kind, val){
+    return '<div class="counter"><button data-dec="'+kind+'">−</button><span class="val" id="cnt-'+kind+'">'+val+'</span><button data-inc="'+kind+'">+</button></div>';
+  }
+
+  // ============================================================
+  //  SUPERVISOR VIEW (desktop)
+  // ============================================================
+  function resultBadge(r){ return '<span class="badge '+(r==="PASS"?"ok":"bad")+'">'+r+'</span>'; }
+
+  function renderSupervisor(){
+    var stage = document.getElementById("supervisor-stage");
+    var maxD = Math.max.apply(null, COMMODITIES.map(function(c){ return defectsByCommodity[c]; }));
+
+    var bars = COMMODITIES.map(function(c){
+      var v = defectsByCommodity[c];
+      var h = Math.max(6, Math.round(v / maxD * 100));
+      var hot = v >= 7;
+      return '<div class="bar'+(hot?'':' alt')+'" style="height:'+h+'%" title="'+c+': '+v+' defects"><span>'+c+'</span></div>';
+    }).join('');
+
+    var rows = recent.map(function(r){
+      return '<tr class="clickable'+(r.result==="FAIL"?" is-bad":"")+'" data-row="'+r.tag+'">'+
+        '<td><b>'+r.tag+'</b></td><td>'+r.commodity+'</td><td>'+r.block+'</td><td class="small muted">'+r.context+'</td>'+
+        '<td class="num">'+r.score.toFixed(1)+'</td><td>'+resultBadge(r.result)+'</td></tr>';
+    }).join('');
+
+    stage.innerHTML =
+      '<div class="grid grid-4">'+
+        '<div class="stat"><div class="label">Inspections today</div><div class="value">'+STATS.today+'</div><div class="delta up">▲ 6 vs. yesterday</div></div>'+
+        '<div class="stat"><div class="label">Pass rate</div><div class="value">'+STATS.passRate+'</div><div class="delta up">▲ 1.4 pts</div></div>'+
+        '<div class="stat"><div class="label">Open test & holds</div><div class="value">'+STATS.holds+'</div><div class="delta down">2 over 24h</div></div>'+
+        '<div class="stat"><div class="label">Avg score</div><div class="value">'+STATS.avg.toFixed(1)+'</div><div class="delta up">▲ 0.3</div></div>'+
+      '</div>'+
+
+      '<div class="grid grid-2" style="margin-top:18px;align-items:start">'+
+        '<div class="card card-pad">'+
+          '<div class="section-title" style="margin-top:0;font-size:1rem">Defects by commodity</div>'+
+          '<div class="bars">'+bars+'</div>'+
+          '<div class="bar-legend"><span><span class="dot bad" style="background:var(--accent)"></span> elevated</span>'+
+            '<span><span class="dot muted"></span> nominal</span></div>'+
+        '</div>'+
+        '<div class="card card-pad">'+
+          '<div class="section-title" style="margin-top:0;font-size:1rem">Disposition mix</div>'+
+          '<div class="row" style="gap:10px"><span class="badge ok">PASS '+recent.filter(function(r){return r.result==="PASS";}).length+'</span>'+
+            '<span class="badge bad">FAIL '+recent.filter(function(r){return r.result==="FAIL";}).length+'</span></div>'+
+          '<div class="progress" style="margin-top:14px;height:14px"><i style="width:'+Math.round(recent.filter(function(r){return r.result==="PASS";}).length/recent.length*100)+'%"></i></div>'+
+          '<p class="small muted" style="margin-top:10px">FAILs auto-route to test & hold and notify the receiving lead, QA manager, and the grower of record.</p>'+
+        '</div>'+
+      '</div>'+
+
+      '<div class="section-title" style="font-size:1rem">Recent inspections</div>'+
+      '<div class="table-wrap"><table class="t">'+
+        '<thead><tr><th>Tag</th><th>Commodity</th><th>Block</th><th>Context</th><th class="num">Score</th><th>Result</th></tr></thead>'+
+        '<tbody>'+rows+'</tbody></table></div>'+
+      '<p class="small muted" style="margin-top:8px">Click any row for the defect breakdown & evidence photos.</p>';
+  }
+
+  function openRow(tag){
+    var r = recent.find(function(x){ return x.tag===tag; });
+    if (!r) return;
+    document.getElementById("dr-title").textContent = r.tag + " · " + r.commodity;
+    document.getElementById("dr-body").innerHTML =
+      '<div class="row" style="margin-bottom:12px">'+resultBadge(r.result)+
+        '<span class="spacer small muted">'+r.block+' · '+r.context+'</span></div>'+
+      '<div class="grid grid-2">'+
+        '<div class="stat"><div class="label">Score</div><div class="value">'+r.score.toFixed(1)+'</div></div>'+
+        '<div class="stat"><div class="label">Sampled</div><div class="value">50</div></div>'+
+      '</div>'+
+      '<div class="section-title" style="font-size:.95rem">Defect breakdown</div>'+
+      '<table class="t"><tbody>'+
+        '<tr><td>Major defects <span class="small muted">(×3)</span></td><td class="num">'+r.majors+'</td></tr>'+
+        '<tr><td>Minor defects <span class="small muted">(×1)</span></td><td class="num">'+r.minors+'</td></tr>'+
+        '<tr style="font-weight:700;background:var(--d-surface-2)"><td>Weighted fail-rate</td><td class="num">'+(((r.majors*3+r.minors)/50)*100).toFixed(1)+'%</td></tr>'+
+      '</tbody></table>'+
+      '<div class="section-title" style="font-size:.95rem">Evidence photos</div>'+
+      '<div class="row" style="gap:8px">'+
+        [0,1,2].map(function(){ return '<div style="flex:1;aspect-ratio:1;border-radius:10px;border:1.5px solid var(--ok);background:var(--ok-soft);display:grid;place-items:center;font-size:1.3rem"><span style="color:var(--ok);font-weight:800">✓</span></div>'; }).join('')+
+      '</div>'+
+      (r.result==="FAIL"
+        ? '<div class="card card-pad" style="margin-top:14px;background:var(--bad-soft);border-color:var(--bad)"><div class="ti">Test & hold opened</div><p class="small muted" style="margin:6px 0 0">Lot quarantined. Stakeholders notified at '+r.tag.replace("TAG-","")+'.</p></div>'
+        : '<div class="badge ok" style="margin-top:14px;width:100%;justify-content:center;padding:.6rem">✓ Released to inventory</div>');
+    FS.openDrawer("insp-drawer");
+  }
+
+  // ============================================================
+  //  ROLE SWITCHING
+  // ============================================================
+  function render(){
+    var role = document.getElementById("role").value;
+    if (role === "inspector"){
+      document.getElementById("inspector-stage").style.display = "";
+      document.getElementById("supervisor-stage").style.display = "none";
+      document.getElementById("role-av").textContent = "IN";
+      renderInspector();
+    } else {
+      document.getElementById("inspector-stage").style.display = "none";
+      document.getElementById("supervisor-stage").style.display = "";
+      document.getElementById("role-av").textContent = "SV";
+      renderSupervisor();
+    }
+  }
+
+  // ============================================================
+  //  EVENTS
+  // ============================================================
+  document.getElementById("role").addEventListener("change", render);
+
+  document.getElementById("lang").addEventListener("click", function(e){
+    var b = e.target.closest("[data-lang]"); if(!b) return;
+    lang = b.getAttribute("data-lang");
+    document.querySelectorAll("#lang button").forEach(function(x){ x.classList.toggle("active", x===b); });
+    document.querySelector('[data-i18n="sub"]').textContent = t('sub');
+    render();
+  });
+
+  // keep sample input from forcing a full re-render on each keystroke
+  document.addEventListener("change", function(e){
+    if (e.target.id === "sample-inp"){
+      S.sample = Math.max(1, parseInt(e.target.value, 10) || 1);
+      renderInspector();
+    }
+  });
+
+  document.addEventListener("click", function(e){
+    // scan
+    if (e.target.closest("[data-scan]")){
+      S.scanned = true; S.tag="TAG-4471"; S.grower="Verde Valley Growers";
+      S.block="North 12"; S.commodity="Romaine"; S.lot="8820";
+      FS.toast("Tag resolved");
+      renderInspector();
+      return;
+    }
+    if (e.target.closest("[data-rescan]")){
+      S = freshState(); renderInspector(); return;
+    }
+    // context pills
+    var ctx = e.target.closest("[data-context]");
+    if (ctx){ S.context = ctx.getAttribute("data-context"); renderInspector(); return; }
+    // counters
+    var inc = e.target.closest("[data-inc]");
+    if (inc){ var k=inc.getAttribute("data-inc"); if(k==="major")S.majors++; else S.minors++; renderInspector(); return; }
+    var dec = e.target.closest("[data-dec]");
+    if (dec){ var k2=dec.getAttribute("data-dec"); if(k2==="major")S.majors=Math.max(0,S.majors-1); else S.minors=Math.max(0,S.minors-1); renderInspector(); return; }
+    // photos
+    var ph = e.target.closest("[data-photo]");
+    if (ph){ var i=+ph.getAttribute("data-photo"); S.photos[i]=!S.photos[i]; if(S.photos[i]) FS.toast("Photo captured"); renderInspector(); return; }
+    // submit
+    if (e.target.closest("[data-submit]")){
+      var pass = isPass(S);
+      var rec = { tag:S.tag, commodity:S.commodity, block:S.block, context:S.context,
+                  score:score(S), majors:S.majors, minors:S.minors, result: pass?"PASS":"FAIL" };
+      recent.unshift(rec);
+      FS.toast("Inspection submitted · "+ (pass? t('pass'):t('fail')));
+      if (!pass) setTimeout(function(){ FS.toast("Stakeholders notified"); }, 900);
+      S = freshState();
+      renderInspector();
+      return;
+    }
+    // supervisor row
+    var row = e.target.closest("[data-row]");
+    if (row){ openRow(row.getAttribute("data-row")); return; }
+  });
+
+  // ============================================================
+  //  RESET
+  // ============================================================
+  window.resetDemo = function(){
+    S = freshState();
+    recent = seedRecent();
+    document.getElementById("role").value = "inspector";
+    FS.closeDrawer();
+    render();
+    FS.toast("Demo reset");
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>
