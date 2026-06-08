@@ -1,8 +1,8 @@
 # Fresh Strategies — Work Showcase
 
-A static, single‑page portfolio that showcases the custom operational apps Fresh Strategies
-has built — each one anonymized and paired with a **clickable, seeded interactive demo**.
-Pure HTML/CSS/JS, no build step, designed to drop straight onto **GitHub Pages**.
+A static, single‑page portfolio that showcases the kind of custom operational apps Fresh Strategies
+builds — each entry is a **representation** paired with a **clickable interactive demo** filled with
+invented data. Pure HTML/CSS/JS, no build step, designed to drop straight onto **GitHub Pages**.
 
 🔗 **Live:** _enable Pages, then this becomes_ `https://freshstrategies.github.io/<repo>/`
 
@@ -12,7 +12,7 @@ Pure HTML/CSS/JS, no build step, designed to drop straight onto **GitHub Pages**
 |---|---|
 | `index.html` | The landing page — hero, sector‑grouped app cards (need → solve), capabilities, process, and contact/booking. |
 | `assets/css/site.css` | Brand foundation + landing styles. |
-| `assets/js/apps.js` | The anonymized app catalog (edit copy here). |
+| `assets/js/apps.js` | The app catalog — titles and need/solve copy (edit copy here). |
 | `assets/js/site.js` | Renders the cards + wires the contact form. |
 | `demos/*.html` | 10 self‑contained interactive mockups, each seeded with fictional data. |
 | `demos/_shared/` | Shared demo shell — `demo.css` (app frame, tables, badges, phone frame) and `demo.js` (tabs, drawers, toasts). |
@@ -25,9 +25,8 @@ Promo & Ad‑Group Tracker
 **Electrical & Trade Contracting** — Job Operations & Daily Reports · Time Cards & CA Compliance
 **Finance & Distribution** — QuickBooks Financial Analysis
 
-Every demo runs entirely in the browser. All data is **fictional and seeded** — nothing persists,
-a refresh (or the **↺ Reset** button) restores the seed. No real client names, employee names, or
-proprietary identifiers appear anywhere.
+Every demo runs entirely in the browser on **invented demo data** — not a real client's system or
+records. Nothing persists; a refresh (or the **↺ Reset** button) restores the demo data.
 
 ## Run locally
 
