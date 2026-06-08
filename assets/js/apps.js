@@ -1,4 +1,4 @@
-/* Fresh Strategies — app catalog (anonymized). Drives the landing cards. */
+/* Fresh Strategies — app catalog (representations + demo data). Drives the landing cards. */
 window.FS_APPS = [
   // ---------------- Agriculture ----------------
   {
