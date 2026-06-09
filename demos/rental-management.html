@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vacation Rental Manager — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+<style>.res-filter.active{ background:var(--accent); color:#fff; border-color:var(--accent); }</style>
+</head>
+<body data-sector="rental">
+
+<div class="demo-banner">
+  <a href="../index.html#rentals">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional properties</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Vacation Rental Manager</div>
+      <div class="app-header__sub">Coastline Stays · 5 properties · June 2026</div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <button class="btn" style="background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.3)" data-newbooking>+ New booking</button>
+  </header>
+
+  <div data-tabs>
+    <div class="tabs">
+      <button class="tab active" data-panel="p-dash">Dashboard</button>
+      <button class="tab" data-panel="p-props">Properties</button>
+      <button class="tab" data-panel="p-res">Reservations <span class="badge-num" id="res-count"></span></button>
+      <button class="tab" data-panel="p-turn">Turnovers <span class="badge-num" id="turn-count"></span></button>
+      <button class="tab" data-panel="p-rev">Revenue</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section class="panel active" id="p-dash">
+      <div class="grid grid-4">
+        <div class="stat"><div class="label">Occupancy (June)</div><div class="value" id="kpi-occ"></div><div class="delta up">▲ 6 pts vs May</div></div>
+        <div class="stat"><div class="label">Revenue MTD</div><div class="value" id="kpi-rev"></div><div class="delta up">▲ 11%</div></div>
+        <div class="stat"><div class="label">Upcoming check‑ins</div><div class="value" id="kpi-checkin"></div><div class="delta">next 7 days</div></div>
+        <div class="stat"><div class="label">Avg nightly rate</div><div class="value" id="kpi-adr"></div><div class="delta">ADR</div></div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="card card-pad">
+          <h3 style="margin:0 0 4px">Arrivals &amp; departures</h3>
+          <p class="small muted" style="margin:0 0 10px">Click a reservation to manage it →</p>
+          <div id="dash-upcoming"></div>
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 10px">Occupancy by property</h3>
+          <div id="dash-occbars" class="bars" style="height:130px"></div>
+          <div style="margin-top:34px">
+            <h3 style="margin:0 0 8px; font-size:1rem">Needs attention</h3>
+            <div id="dash-alerts"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROPERTIES -->
+    <section class="panel" id="p-props">
+      <div class="grid grid-3" id="prop-cards"></div>
+    </section>
+
+    <!-- RESERVATIONS -->
+    <section class="panel" id="p-res">
+      <div class="card card-pad" style="margin-bottom:14px">
+        <div class="row wrap">
+          <strong class="small">Filter</strong>
+          <button class="btn btn-ghost btn-sm res-filter active" data-status="all">All</button>
+          <button class="btn btn-ghost btn-sm res-filter" data-status="PENDING">Pending</button>
+          <button class="btn btn-ghost btn-sm res-filter" data-status="CONFIRMED">Confirmed</button>
+          <button class="btn btn-ghost btn-sm res-filter" data-status="CHECKED_IN">Checked‑in</button>
+          <button class="btn btn-ghost btn-sm res-filter" data-status="CHECKED_OUT">Checked‑out</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="t">
+          <thead><tr><th>Status</th><th>Confirmation</th><th>Property</th><th>Guest</th><th>Check‑in</th><th>Check‑out</th><th class="num">Nights</th><th class="num">Total</th></tr></thead>
+          <tbody id="res-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TURNOVERS -->
+    <section class="panel" id="p-turn">
+      <p class="small muted">Each checkout creates a turnover. Move a unit from <b>To clean</b> → <b>Cleaning</b> → <b>Guest‑ready</b>. A unit can’t take its next guest until it’s ready.</p>
+      <div class="grid grid-3" id="turn-cols"></div>
+    </section>
+
+    <!-- REVENUE -->
+    <section class="panel" id="p-rev">
+      <div class="grid grid-4">
+        <div class="stat"><div class="label">Revenue YTD</div><div class="value" id="rv-ytd"></div></div>
+        <div class="stat"><div class="label">Avg occupancy</div><div class="value" id="rv-occ"></div></div>
+        <div class="stat"><div class="label">ADR</div><div class="value" id="rv-adr"></div></div>
+        <div class="stat"><div class="label">Owner payout (June est.)</div><div class="value" id="rv-payout"></div></div>
+      </div>
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="card card-pad">
+          <h3 style="margin:0 0 10px">Revenue by month</h3>
+          <div class="bars" id="rev-bars" style="height:150px"></div>
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 10px">Revenue by property (YTD)</h3>
+          <table class="t">
+            <thead><tr><th>Property</th><th class="num">Nights booked</th><th class="num">Revenue</th></tr></thead>
+            <tbody id="rev-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Drawer -->
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer__head"><h3 style="margin:0" id="dr-title">Detail</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body" id="dr-body"></div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  var money = FS.money0;
+
+  // ---------- Seed (fictional) ----------
+  var PROPS = [
+    { id: "SEA", name: "Seabreeze Cottage", type: "2BR · sleeps 4", rate: 285, occ: 82, rating: 4.9, status: "Listed", nightsYTD: 96, revYTD: 27360 },
+    { id: "DUN", name: "Dune View Bungalow", type: "1BR · sleeps 2", rate: 190, occ: 76, rating: 4.8, status: "Listed", nightsYTD: 88, revYTD: 16720 },
+    { id: "HAR", name: "Harbor Loft", type: "Studio · sleeps 2", rate: 150, occ: 68, rating: 4.7, status: "Listed", nightsYTD: 79, revYTD: 11850 },
+    { id: "PEL", name: "Pelican Cove House", type: "3BR · sleeps 6", rate: 410, occ: 88, rating: 5.0, status: "Listed", nightsYTD: 102, revYTD: 41820 },
+    { id: "TID", name: "Tide Pool Retreat", type: "2BR · sleeps 4", rate: 260, occ: 0, rating: 4.6, status: "Maintenance", nightsYTD: 61, revYTD: 15860 }
+  ];
+  function prop(id) { return PROPS.find(function (p) { return p.id === id; }); }
+
+  var STATUS = { PENDING: { l: "Pending", c: "warn" }, CONFIRMED: { l: "Confirmed", c: "info" }, CHECKED_IN: { l: "Checked‑in", c: "ok" }, CHECKED_OUT: { l: "Checked‑out", c: "muted" }, CANCELLED: { l: "Cancelled", c: "bad" } };
+  var FLOW = { PENDING: "CONFIRMED", CONFIRMED: "CHECKED_IN", CHECKED_IN: "CHECKED_OUT" };
+  var FLOW_LABEL = { PENDING: "Confirm booking", CONFIRMED: "Check in guest", CHECKED_IN: "Check out guest" };
+
+  function seedRes() {
+    return [
+      { id: "BR‑1042", prop: "SEA", guest: "J. Bennett", party: 3, cin: "Jun 9", cout: "Jun 13", nights: 4, total: 1235, clean: 95, status: "CHECKED_IN", notes: "Early check‑in requested (1pm)." },
+      { id: "BR‑1043", prop: "PEL", guest: "Alvarez party", party: 6, cin: "Jun 12", cout: "Jun 19", nights: 7, total: 2965, clean: 125, status: "CONFIRMED", notes: "Anniversary trip · pack‑n‑play needed." },
+      { id: "BR‑1044", prop: "DUN", guest: "M. Okafor", party: 2, cin: "Jun 10", cout: "Jun 12", nights: 2, total: 475, clean: 75, status: "CHECKED_OUT", notes: "" },
+      { id: "BR‑1045", prop: "HAR", guest: "S. Tran", party: 2, cin: "Jun 14", cout: "Jun 17", nights: 3, total: 540, clean: 70, status: "PENDING", notes: "Awaiting deposit." },
+      { id: "BR‑1046", prop: "SEA", guest: "R. Patel", party: 4, cin: "Jun 15", cout: "Jun 20", nights: 5, total: 1520, clean: 95, status: "CONFIRMED", notes: "" },
+      { id: "BR‑1047", prop: "PEL", guest: "D. Murphy", party: 5, cin: "Jun 21", cout: "Jun 25", nights: 4, total: 1765, clean: 125, status: "CONFIRMED", notes: "Late checkout approved." },
+      { id: "BR‑1048", prop: "HAR", guest: "K. Lindqvist", party: 1, cin: "Jun 18", cout: "Jun 21", nights: 3, total: 540, clean: 70, status: "PENDING", notes: "" }
+    ];
+  }
+  function seedTurn() {
+    return [
+      { id: "T‑01", prop: "DUN", due: "Today · 11:00 AM", cleaner: "Cleaner A", status: "DIRTY" },
+      { id: "T‑02", prop: "TID", due: "Deep clean · maintenance", cleaner: "Cleaner B", status: "CLEANING" },
+      { id: "T‑03", prop: "HAR", due: "Yesterday", cleaner: "Cleaner A", status: "READY" }
+    ];
+  }
+  var TURN_STATUS = { DIRTY: { l: "To clean", c: "bad" }, CLEANING: { l: "Cleaning", c: "warn" }, READY: { l: "Guest‑ready", c: "ok" } };
+  var TURN_FLOW = { DIRTY: "CLEANING", CLEANING: "READY" };
+
+  var reservations, turnovers, resFilter = "all";
+  var REV_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+  var REV_VALS = [9800, 11200, 14600, 18900, 21400, 23710];
+
+  function reset() { reservations = seedRes(); turnovers = seedTurn(); resFilter = "all"; renderAll(); }
+
+  // ---------- Renderers ----------
+  function badge(s) { return '<span class="badge ' + STATUS[s].c + '">' + STATUS[s].l + '</span>'; }
+
+  function listedOcc() {
+    var listed = PROPS.filter(function (p) { return p.status === "Listed"; });
+    return Math.round(listed.reduce(function (a, p) { return a + p.occ; }, 0) / listed.length);
+  }
+  function renderKPIs() {
+    document.getElementById("kpi-occ").textContent = listedOcc() + "%";
+    document.getElementById("kpi-rev").textContent = money(23710);
+    var checkins = reservations.filter(function (r) { return r.status === "CONFIRMED"; }).length;
+    document.getElementById("kpi-checkin").textContent = checkins;
+    var adr = Math.round(PROPS.reduce(function (a, p) { return a + p.rate; }, 0) / PROPS.length);
+    document.getElementById("kpi-adr").textContent = money(adr);
+  }
+
+  function listItem(r) {
+    var p = prop(r.prop);
+    return '<div class="list-item" data-res="' + r.id + '"><div class="ic">' + FS.initials(p.name) + '</div>' +
+      '<div class="grow"><div class="ti">' + p.name + ' · ' + FS.esc(r.guest) + '</div>' +
+      '<div class="su">' + r.cin + ' → ' + r.cout + ' · ' + r.nights + ' nts · ' + money(r.total) + '</div></div>' + badge(r.status) + '</div>';
+  }
+
+  function renderDash() {
+    var up = reservations.filter(function (r) { return r.status === "CONFIRMED" || r.status === "CHECKED_IN"; }).slice(0, 4);
+    document.getElementById("dash-upcoming").innerHTML = up.map(listItem).join("") || '<p class="muted small">Nothing upcoming.</p>';
+
+    var max = Math.max.apply(null, PROPS.map(function (p) { return p.occ; })) || 100;
+    document.getElementById("dash-occbars").innerHTML = PROPS.map(function (p) {
+      return '<div class="bar" style="height:' + (p.occ / max * 100) + '%"><span>' + p.id + '</span></div>';
+    }).join("");
+
+    var alerts = [];
+    var pend = reservations.filter(function (r) { return r.status === "PENDING"; }).length;
+    if (pend) alerts.push('<div class="list-item" style="cursor:default"><div class="ic" style="background:var(--warn-soft);color:var(--warn)">!</div><div class="grow"><div class="ti">' + pend + ' booking' + (pend > 1 ? "s" : "") + ' pending deposit</div><div class="su">Confirm to lock the dates</div></div></div>');
+    var dirty = turnovers.filter(function (t) { return t.status !== "READY"; }).length;
+    if (dirty) alerts.push('<div class="list-item" style="cursor:default"><div class="ic" style="background:var(--bad-soft);color:var(--bad)">⚑</div><div class="grow"><div class="ti">' + dirty + ' turnover' + (dirty > 1 ? "s" : "") + ' not guest‑ready</div><div class="su">See the Turnovers board</div></div></div>');
+    var maint = PROPS.filter(function (p) { return p.status === "Maintenance"; });
+    maint.forEach(function (p) { alerts.push('<div class="list-item" style="cursor:default"><div class="ic" style="background:var(--d-surface-2)">🛠</div><div class="grow"><div class="ti">' + p.name + ' in maintenance</div><div class="su">Blocked from new bookings</div></div></div>'); });
+    document.getElementById("dash-alerts").innerHTML = alerts.join("") || '<p class="muted small">All clear.</p>';
+  }
+
+  function renderProps() {
+    document.getElementById("prop-cards").innerHTML = PROPS.map(function (p) {
+      var st = p.status === "Listed" ? '<span class="badge ok">Listed</span>' : '<span class="badge warn">Maintenance</span>';
+      return '<div class="card card-pad" style="cursor:pointer" data-prop="' + p.id + '">' +
+        '<div class="row"><strong>' + p.name + '</strong><span class="spacer">' + st + '</span></div>' +
+        '<div class="small muted" style="margin:4px 0 12px">' + p.type + '</div>' +
+        '<div class="row" style="justify-content:space-between"><span class="small muted">Nightly</span><strong>' + money(p.rate) + '</strong></div>' +
+        '<div class="row" style="justify-content:space-between"><span class="small muted">Occupancy</span><strong>' + p.occ + '%</strong></div>' +
+        '<div class="progress" style="margin:6px 0 10px"><i style="width:' + p.occ + '%"></i></div>' +
+        '<div class="row" style="justify-content:space-between"><span class="small muted">Guest rating</span><strong>★ ' + p.rating.toFixed(1) + '</strong></div>' +
+        '</div>';
+    }).join("");
+  }
+
+  function renderRes() {
+    var rows = reservations.filter(function (r) { return resFilter === "all" || r.status === resFilter; });
+    document.getElementById("res-rows").innerHTML = rows.map(function (r) {
+      var p = prop(r.prop);
+      return '<tr class="clickable" data-res="' + r.id + '"><td>' + badge(r.status) + '</td><td><b>' + r.id + '</b></td><td>' + p.name +
+        '</td><td>' + FS.esc(r.guest) + '</td><td>' + r.cin + '</td><td>' + r.cout + '</td><td class="num">' + r.nights +
+        '</td><td class="num">' + money(r.total) + '</td></tr>';
+    }).join("") || '<tr><td colspan="8" class="muted" style="text-align:center">No reservations in this view.</td></tr>';
+    document.getElementById("res-count").textContent = reservations.filter(function (r) { return r.status === "PENDING" || r.status === "CONFIRMED"; }).length;
+  }
+
+  function renderTurn() {
+    var cols = [["DIRTY", "To clean"], ["CLEANING", "Cleaning"], ["READY", "Guest‑ready"]];
+    document.getElementById("turn-cols").innerHTML = cols.map(function (c) {
+      var items = turnovers.filter(function (t) { return t.status === c[0]; });
+      var inner = items.map(function (t) {
+        var p = prop(t.prop);
+        var next = TURN_FLOW[t.status];
+        var btn = next ? '<button class="btn btn-primary btn-sm" style="margin-top:8px" data-turn="' + t.id + '">' + (next === "CLEANING" ? "Start cleaning" : "Mark guest‑ready") + ' →</button>' : '<span class="badge ok" style="margin-top:8px">✓ Ready for next guest</span>';
+        return '<div class="card card-pad" style="margin-bottom:10px"><div class="row"><strong>' + p.name + '</strong><span class="spacer badge ' + TURN_STATUS[t.status].c + '">' + TURN_STATUS[t.status].l + '</span></div>' +
+          '<div class="small muted" style="margin:4px 0">' + t.due + ' · ' + t.cleaner + '</div>' + btn + '</div>';
+      }).join("") || '<p class="muted small">Empty</p>';
+      return '<div><div class="section-title" style="margin-top:0; font-size:.95rem"><span class="dot ' + (c[0] === "DIRTY" ? "bad" : c[0] === "CLEANING" ? "warn" : "ok") + '"></span>' + c[1] + ' <span class="muted">(' + items.length + ')</span></div>' + inner + '</div>';
+    }).join("");
+    document.getElementById("turn-count").textContent = turnovers.filter(function (t) { return t.status !== "READY"; }).length;
+  }
+
+  function renderRev() {
+    var totalRev = PROPS.reduce(function (a, p) { return a + p.revYTD; }, 0);
+    var totalNights = PROPS.reduce(function (a, p) { return a + p.nightsYTD; }, 0);
+    document.getElementById("rv-ytd").textContent = money(totalRev);
+    document.getElementById("rv-occ").textContent = listedOcc() + "%";
+    document.getElementById("rv-adr").textContent = money(Math.round(totalRev / totalNights));
+    document.getElementById("rv-payout").textContent = money(Math.round(23710 * 0.82));
+    var max = Math.max.apply(null, REV_VALS);
+    document.getElementById("rev-bars").innerHTML = REV_VALS.map(function (v, i) {
+      return '<div class="bar" style="height:' + (v / max * 100) + '%"><span>' + REV_MONTHS[i] + '</span></div>';
+    }).join("");
+    document.getElementById("rev-rows").innerHTML = PROPS.slice().sort(function (a, b) { return b.revYTD - a.revYTD; }).map(function (p) {
+      return '<tr><td><b>' + p.name + '</b></td><td class="num">' + p.nightsYTD + '</td><td class="num">' + money(p.revYTD) + '</td></tr>';
+    }).join("") + '<tr style="font-weight:700;background:var(--d-surface-2)"><td>Total</td><td class="num">' + totalNights + '</td><td class="num">' + money(totalRev) + '</td></tr>';
+  }
+
+  function renderAll() { renderKPIs(); renderDash(); renderProps(); renderRes(); renderTurn(); renderRev(); }
+
+  // ---------- Drawers ----------
+  function openRes(id) {
+    var r = reservations.find(function (x) { return x.id === id; }); if (!r) return;
+    var p = prop(r.prop);
+    var next = FLOW[r.status];
+    document.getElementById("dr-title").textContent = r.id + " · " + p.name;
+    document.getElementById("dr-body").innerHTML =
+      '<div class="row" style="margin-bottom:12px">' + badge(r.status) + '<span class="spacer small muted">' + p.type + '</span></div>' +
+      '<table class="t" style="margin-bottom:14px">' +
+        '<tr><td class="muted">Guest</td><td style="text-align:right"><b>' + FS.esc(r.guest) + '</b> · ' + r.party + ' guests</td></tr>' +
+        '<tr><td class="muted">Check‑in</td><td style="text-align:right">' + r.cin + '</td></tr>' +
+        '<tr><td class="muted">Check‑out</td><td style="text-align:right">' + r.cout + '</td></tr>' +
+        '<tr><td class="muted">Nights</td><td style="text-align:right">' + r.nights + ' × ' + money(p.rate) + '</td></tr>' +
+        '<tr><td class="muted">Cleaning fee</td><td style="text-align:right">' + money(r.clean) + '</td></tr>' +
+        '<tr style="font-weight:700;background:var(--d-surface-2)"><td>Total</td><td style="text-align:right">' + money(r.total) + '</td></tr>' +
+      '</table>' +
+      (r.notes ? '<p class="small"><b>Notes:</b> ' + FS.esc(r.notes) + '</p>' : '') +
+      (next ? '<button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" data-resadv="' + r.id + '">' + FLOW_LABEL[r.status] + ' →</button>' : '<div class="badge ok" style="width:100%;justify-content:center;padding:.6rem">✓ Stay complete</div>') +
+      (r.status === "PENDING" || r.status === "CONFIRMED" ? '<button class="btn btn-danger btn-sm" style="width:100%;justify-content:center;margin-top:8px" data-rescancel="' + r.id + '">Cancel booking</button>' : '');
+    FS.openDrawer("drawer");
+  }
+  function openProp(id) {
+    var p = prop(id); if (!p) return;
+    var upcoming = reservations.filter(function (r) { return r.prop === id && r.status !== "CHECKED_OUT" && r.status !== "CANCELLED"; });
+    document.getElementById("dr-title").textContent = p.name;
+    document.getElementById("dr-body").innerHTML =
+      '<div class="row" style="margin-bottom:12px">' + (p.status === "Listed" ? '<span class="badge ok">Listed</span>' : '<span class="badge warn">Maintenance</span>') + '<span class="spacer small muted">' + p.type + '</span></div>' +
+      '<div class="grid grid-2"><div class="stat"><div class="label">Nightly</div><div class="value">' + money(p.rate) + '</div></div>' +
+      '<div class="stat"><div class="label">Occupancy</div><div class="value">' + p.occ + '%</div></div>' +
+      '<div class="stat"><div class="label">Rating</div><div class="value">★ ' + p.rating.toFixed(1) + '</div></div>' +
+      '<div class="stat"><div class="label">Revenue YTD</div><div class="value">' + money(p.revYTD) + '</div></div></div>' +
+      '<h3 style="margin:18px 0 8px; font-size:1rem">Upcoming stays</h3>' +
+      (upcoming.length ? upcoming.map(listItem).join("") : '<p class="muted small">No upcoming reservations.</p>');
+    FS.openDrawer("drawer");
+  }
+
+  function advanceRes(id) {
+    var r = reservations.find(function (x) { return x.id === id; }); if (!r) return;
+    var next = FLOW[r.status]; if (!next) return;
+    r.status = next;
+    FS.toast(r.id + " → " + STATUS[next].l);
+    if (next === "CHECKED_OUT") {
+      // checkout spawns a turnover
+      if (!turnovers.some(function (t) { return t.prop === r.prop && t.status !== "READY"; })) {
+        turnovers.unshift({ id: "T‑" + (turnovers.length + 10), prop: r.prop, due: "Just now · after checkout", cleaner: "Unassigned", status: "DIRTY" });
+        FS.toast("Turnover created for " + prop(r.prop).name);
+      }
+    }
+    renderAll();
+    if (document.getElementById("drawer").classList.contains("open")) openRes(id);
+  }
+
+  // ---------- Events ----------
+  document.addEventListener("click", function (e) {
+    var adv = e.target.closest("[data-resadv]"); if (adv) { advanceRes(adv.getAttribute("data-resadv")); return; }
+    var can = e.target.closest("[data-rescancel]"); if (can) { var r = reservations.find(function (x) { return x.id === can.getAttribute("data-rescancel"); }); if (r) { r.status = "CANCELLED"; FS.toast(r.id + " cancelled"); FS.closeDrawer(); renderAll(); } return; }
+    var resEl = e.target.closest("[data-res]"); if (resEl) { openRes(resEl.getAttribute("data-res")); return; }
+    var propEl = e.target.closest("[data-prop]"); if (propEl) { openProp(propEl.getAttribute("data-prop")); return; }
+    var turnEl = e.target.closest("[data-turn]"); if (turnEl) {
+      var t = turnovers.find(function (x) { return x.id === turnEl.getAttribute("data-turn"); });
+      if (t && TURN_FLOW[t.status]) { t.status = TURN_FLOW[t.status]; FS.toast(prop(t.prop).name + " → " + TURN_STATUS[t.status].l); renderTurn(); renderDash(); }
+      return;
+    }
+    var filt = e.target.closest(".res-filter"); if (filt) {
+      resFilter = filt.getAttribute("data-status");
+      document.querySelectorAll(".res-filter").forEach(function (b) { b.classList.toggle("active", b === filt); });
+      renderRes(); return;
+    }
+    if (e.target.closest("[data-newbooking]")) { FS.toast("New‑booking form would open here"); }
+  });
+
+  window.resetDemo = function () { reset(); FS.closeDrawer(); FS.toast("Demo reset"); };
+  reset();
+})();
+</script>
+</body>
+</html>

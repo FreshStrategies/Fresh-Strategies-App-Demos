@@ -74,6 +74,15 @@ window.FS_APPS = [
     need: "A finance team couldn’t slice QuickBooks the way leadership asked — by department, vendor, or budget variance — and pulled the same reports by hand every month.",
     solve: "A secure app connects to QuickBooks Online and delivers balance sheet, cash flow, budget‑vs‑actual, and AP aging on demand, with department drill‑downs, role‑scoped report access, and AI‑written commentary on what changed and why.",
     tags: [".NET / Razor", "QBO OAuth", "AI analysis", "Role‑scoped", "MFA"]
+  },
+
+  // ---------------- Real Estate & Rentals ----------------
+  {
+    sector: "rental", slug: "rental-management", title: "Vacation Rental Manager",
+    icon: "home",
+    need: "An owner running several short‑term rental properties juggled bookings, cleaning turnovers, and payouts across a calendar, a spreadsheet, and text messages — and still double‑booked and missed cleanings.",
+    solve: "One dashboard for the whole portfolio: reservations with a clear status flow (pending → confirmed → checked‑in → checked‑out), a turnover board that moves each unit from checkout to clean to guest‑ready, and occupancy, nightly‑rate, and payout numbers per property at a glance.",
+    tags: ["React", "Bookings", "Turnover board", "Occupancy & revenue"]
   }
 ];
 

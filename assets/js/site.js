@@ -19,13 +19,14 @@
     database: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
     plug: '<path d="M9 2v6M15 2v6M7 8h10v3a5 5 0 01-10 0z"/><path d="M12 16v6"/>',
     robot: '<rect x="4" y="8" width="16" height="11" rx="2"/><path d="M12 8V4M9 13h.01M15 13h.01M9 16h6"/>',
-    rocket: '<path d="M5 15c-1 1-1 4-1 4s3 0 4-1m6-12a8 8 0 00-9 9l3 3a8 8 0 009-9 6 6 0 00-3-3z"/><circle cx="14.5" cy="9.5" r="1.5"/>'
+    rocket: '<path d="M5 15c-1 1-1 4-1 4s3 0 4-1m6-12a8 8 0 00-9 9l3 3a8 8 0 009-9 6 6 0 00-3-3z"/><circle cx="14.5" cy="9.5" r="1.5"/>',
+    home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/>'
   };
   function icon(name, cls) {
     return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[name] || '') + '</svg>';
   }
 
-  var SECTOR_LABEL = { ag: "Agriculture", elec: "Electrical", fin: "Finance" };
+  var SECTOR_LABEL = { ag: "Agriculture", elec: "Electrical", fin: "Finance", rental: "Real Estate" };
 
   function cardPreview(app) {
     // pure-CSS mini mockup tinted by sector
@@ -68,7 +69,7 @@
     var el = document.querySelector(selector);
     if (el) el.innerHTML = items.map(render).join('');
   }
-  ["ag", "elec", "fin"].forEach(function (s) {
+  ["ag", "elec", "fin", "rental"].forEach(function (s) {
     fill('[data-grid="' + s + '"]', window.FS_APPS.filter(function (a) { return a.sector === s; }), appCard);
   });
   fill('[data-grid="cap"]', window.FS_CAPABILITIES, capCard);
