@@ -7,6 +7,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="_shared/demo.css" />
+<style>
+  .pdfpage { background:#fff; border:1px solid var(--d-border); border-radius:8px; padding:14px; position:relative; overflow:hidden; box-shadow: var(--d-shadow); }
+  .pdfpage__h { height:10px; width:55%; background:var(--d-ink); border-radius:3px; opacity:.82; margin-bottom:11px; }
+  .pdfline { height:7px; border-radius:3px; background:var(--d-surface-2); margin:7px 0; }
+  .pdfline.hl { background:var(--accent-soft); border:1px solid var(--accent); }
+  .pdfpage__tag { position:absolute; top:10px; right:10px; font-size:.68rem; font-weight:700; color:var(--d-muted); background:var(--d-surface-2); border:1px solid var(--d-border); padding:.12rem .45rem; border-radius:5px; }
+  .scan { position:absolute; left:0; right:0; height:28px; background:linear-gradient(180deg, transparent, var(--accent-soft), transparent); opacity:.55; pointer-events:none; animation: scanmove 2.6s ease-in-out infinite; }
+  @keyframes scanmove { 0%,100% { top:-28px; } 50% { top:100%; } }
+</style>
 </head>
 <body data-sector="ai">
 
@@ -46,7 +55,12 @@
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
         </div>
         <h3 style="margin:0 0 4px">Drop this week's market report PDF</h3>
-        <p class="small muted" style="margin:0 0 16px">A 30–40 page pricing &amp; volume report arrives every week. Claude reads it and extracts the figures into your database.</p>
+        <p class="small muted" style="margin:0 0 12px">A 30–40 page pricing &amp; volume report arrives every week. Claude reads it and extracts the figures into your database.</p>
+        <div class="row" style="justify-content:center;gap:6px;flex-wrap:wrap;margin:0 0 16px">
+          <span class="badge muted">1 Claude call per commodity</span>
+          <span class="badge muted">PDF prompt‑cached · ~90% cheaper</span>
+          <span class="badge muted">Low‑confidence cells flagged</span>
+        </div>
         <button class="btn btn-primary" id="upload-btn">⬆ Upload weekly report</button>
         <div id="extract-progress" style="max-width:460px;margin:22px auto 0;display:none">
           <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="small" id="progress-label" style="font-weight:600">Claude is reading…</span><span class="small muted" id="progress-pct">0%</span></div>
@@ -84,6 +98,35 @@
               <button class="btn btn-ghost btn-sm" id="discard-btn">Discard</button>
               <button class="btn btn-primary btn-sm" id="approve-btn">✓ Approve &amp; save</button>
             </div>
+          </div>
+        </div>
+
+        <div class="grid grid-2" style="margin-top:16px">
+          <div class="card card-pad">
+            <div class="row"><h3 style="margin:0">Source document</h3><span class="spacer small muted">what Claude read</span></div>
+            <div class="pdfpage" style="margin-top:10px">
+              <span class="scan"></span>
+              <span class="pdfpage__tag">34 pages</span>
+              <div class="pdfpage__h"></div>
+              <div class="pdfline" style="width:92%"></div>
+              <div class="pdfline" style="width:80%"></div>
+              <div class="pdfline hl" style="width:96%"></div>
+              <div class="pdfline hl" style="width:88%"></div>
+              <div class="pdfline" style="width:70%"></div>
+              <div class="pdfline hl" style="width:90%"></div>
+              <div class="pdfline" style="width:62%"></div>
+            </div>
+            <p class="small muted" style="margin:10px 0 0">Highlighted rows are the figures the model pulled into structured tables.</p>
+          </div>
+          <div class="card card-pad">
+            <h3 style="margin:0 0 10px">Extraction confidence</h3>
+            <div class="grid grid-2">
+              <div class="stat"><div class="label">Overall</div><div class="value">96%</div></div>
+              <div class="stat"><div class="label">Cells flagged</div><div class="value" style="color:var(--warn)">3</div></div>
+            </div>
+            <div class="progress" style="margin:14px 0 6px"><i style="width:96%"></i></div>
+            <p class="small muted" style="margin:0">Three low-confidence cells (highlighted below) are held for a human to verify before anything is saved.</p>
+            <p class="small" style="margin:12px 0 0;padding-top:10px;border-top:1px solid var(--d-border);color:var(--accent-deep);font-weight:600">✦ One Claude call per commodity · the 34-page PDF is prompt-cached, so re-reads run ~90% cheaper.</p>
           </div>
         </div>
 
@@ -155,7 +198,10 @@
       </div>
 
       <div class="card card-pad" style="margin-top:16px;background:var(--accent-soft);border-color:var(--accent)">
-        <p class="small" style="margin:0;color:var(--accent-deep);font-weight:600">✨ Every figure here came from a PDF — extracted by AI, approved by a person.</p>
+        <div class="row wrap" style="gap:10px">
+          <p class="small" style="margin:0;color:var(--accent-deep);font-weight:600;flex:1;min-width:220px">✦ Every figure here came from a PDF — extracted by AI, approved by a person, and now queryable.</p>
+          <a class="btn btn-primary btn-sm" href="ai-assistant.html">Ask the AI Assistant about this data →</a>
+        </div>
       </div>
     </section>
   </div>
