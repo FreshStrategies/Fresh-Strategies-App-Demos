@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Traceability Sync &amp; Compliance — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="ag">
+
+<div class="demo-banner">
+  <a href="../index.html#agriculture">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional company</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 3v18"/><path d="M4 8l8 4 8-4"/><path d="M4 16l8 4 8-4"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Traceability Sync &amp; Compliance</div>
+      <div class="app-header__sub">Northbay Produce Co. · <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● Master data ⇄ traceability platform</span></div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <label class="small" style="color:rgba(255,255,255,.85)" for="testmode">Test mode</label>
+      <button id="testmode" class="pill-toggle" style="cursor:pointer" aria-pressed="false">
+        <span id="tm-state" style="display:inline-block;padding:.25rem .7rem;border-radius:999px;font-size:.78rem;font-weight:700;background:rgba(255,255,255,.2);color:#fff">Off</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="tm-banner" class="card card-pad" style="display:none;margin-top:14px;border-left:4px solid var(--warn);background:var(--warn-soft)">
+    <div class="row"><span class="badge warn">Test mode</span><span class="small" style="color:var(--warn)"><b>Writes suppressed.</b> Approvals and pushes run through validation only — nothing reaches the traceability platform.</span></div>
+  </div>
+
+  <div data-tabs>
+    <div class="tabs">
+      <button class="tab active" data-panel="p-daily">Daily Sync <span class="badge-num" id="daily-count">6</span></button>
+      <button class="tab" data-panel="p-lot">Lot Sync</button>
+      <button class="tab" data-panel="p-label">Label Cutover</button>
+      <button class="tab" data-panel="p-hist">Run History</button>
+    </div>
+
+    <!-- DAILY SYNC -->
+    <section class="panel active" id="p-daily">
+      <div class="card card-pad" style="margin-bottom:16px">
+        <div class="row wrap">
+          <div>
+            <h3 style="margin:0">Proposed product changes</h3>
+            <p class="small muted" style="margin:4px 0 0">Human-in-the-loop diff. Master data is authoritative — review each change before it's pushed to the traceability platform.</p>
+          </div>
+          <span class="spacer"></span>
+          <button class="btn btn-ghost btn-sm" id="approve-all">✓ Approve all</button>
+          <button class="btn btn-primary btn-sm" id="push-approved">Push approved (<span id="approved-n">0</span>)</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="t">
+          <thead><tr><th>Product</th><th>Field changed</th><th>Old → New</th><th>Source</th><th style="text-align:right">Decision</th></tr></thead>
+          <tbody id="daily-rows"></tbody>
+        </table>
+      </div>
+      <p class="small muted" style="margin-top:10px">6 proposed · <span id="ct-app">0</span> approved · <span id="ct-rej">0</span> rejected · <span id="ct-pend">6</span> pending</p>
+    </section>
+
+    <!-- LOT SYNC -->
+    <section class="panel" id="p-lot">
+      <div class="grid grid-4">
+        <div class="stat"><div class="label">Last run</div><div class="value" id="lot-last" style="font-size:1.25rem">6:42a</div><div class="small muted">Automated daily</div></div>
+        <div class="stat"><div class="label">Lots created</div><div class="value" id="lot-created">38</div></div>
+        <div class="stat"><div class="label">Lots updated</div><div class="value" id="lot-updated">124</div></div>
+        <div class="stat"><div class="label">Failed</div><div class="value" id="lot-failed" style="color:var(--ok)">0</div></div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="row wrap">
+          <div>
+            <h3 style="margin:0">Daily lot sync</h3>
+            <p class="small muted" style="margin:4px 0 0">Must complete by <b>7:00a</b> for same-day labeling. Pulls new and changed lots from the ERP into the traceability platform.</p>
+          </div>
+          <span class="spacer"></span>
+          <span class="badge ok" id="lot-status">● Completed on time</span>
+          <button class="btn btn-primary btn-sm" id="lot-run">↻ Run now</button>
+        </div>
+        <div class="progress" style="margin-top:14px"><i style="width:100%"></i></div>
+        <p class="small muted" style="margin:8px 0 0">Window closes in <b id="lot-window">18 min</b> · next scheduled run tomorrow 6:40a</p>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px">
+        <h3 style="margin:0 0 10px">Recent lots synced</h3>
+        <div class="table-wrap" style="box-shadow:none;border:none">
+          <table class="t">
+            <thead><tr><th>Lot</th><th>Commodity</th><th>Grower</th><th class="num">Cases</th><th style="text-align:right">Status</th></tr></thead>
+            <tbody id="lot-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- LABEL CUTOVER -->
+    <section class="panel" id="p-label">
+      <div class="card card-pad" style="margin-bottom:16px;border-left:4px solid var(--info);background:var(--info-soft)">
+        <div class="row"><span class="badge info">Regulatory cutover</span><span class="small" style="color:var(--info)">One-time label format change · dual approval required · target go-live <b>Jul 14, 2026</b></span></div>
+      </div>
+
+      <div class="card card-pad">
+        <div class="row"><h3 style="margin:0">Label format cutover</h3><span class="spacer badge muted" id="cut-phase">Not started</span></div>
+        <p class="small muted" style="margin:4px 0 16px">Gated stepper. Each step unlocks the next; production execute stays locked until <b>both</b> named approvers sign off.</p>
+
+        <ol class="timeline" id="cut-steps" style="margin-top:4px">
+          <li class="pending" id="s1">
+            <span class="node"></span>
+            <div class="row"><span class="tl-t">1 · Dry run</span><span class="spacer"></span><button class="btn btn-ghost btn-sm" id="btn-dry">Run dry run</button></div>
+            <div class="tl-s" id="s1-out">Simulates the change with no writes. Reports how many labels would change.</div>
+          </li>
+          <li class="pending" id="s2">
+            <span class="node"></span>
+            <div class="row"><span class="tl-t">2 · UAT execute</span><span class="spacer"></span><button class="btn btn-ghost btn-sm" id="btn-uat" disabled>Execute in UAT</button></div>
+            <div class="tl-s" id="s2-out">Runs the full cutover against the UAT environment for sign-off.</div>
+          </li>
+          <li class="pending" id="s3">
+            <span class="node"></span>
+            <div class="tl-t">3 · Dual approval</div>
+            <div class="tl-s" style="margin-bottom:8px">Two named approvers must confirm the UAT result before production is unlocked.</div>
+            <div class="row wrap">
+              <button class="btn btn-ghost btn-sm" id="btn-dana" disabled>Approve as Dana</button>
+              <button class="btn btn-ghost btn-sm" id="btn-alex" disabled>Approve as Alex</button>
+              <span class="spacer"></span>
+              <span class="badge muted" id="ap-dana">Dana · pending</span>
+              <span class="badge muted" id="ap-alex">Alex · pending</span>
+            </div>
+          </li>
+          <li class="pending" id="s4">
+            <span class="node"></span>
+            <div class="row"><span class="tl-t">4 · Production execute</span><span class="spacer"></span><button class="btn btn-primary btn-sm" id="btn-prod" disabled>Execute in production</button></div>
+            <div class="tl-s" id="s4-out">Locked until dry run, UAT, and both approvals are complete.</div>
+          </li>
+        </ol>
+      </div>
+
+      <div class="card card-pad" id="audit-card" style="margin-top:16px;display:none;border-left:4px solid var(--ok)">
+        <div class="row"><h3 style="margin:0">Audit report</h3><span class="spacer badge ok">Cutover complete</span></div>
+        <div class="grid grid-4" style="margin-top:14px">
+          <div class="stat"><div class="label">Labels changed</div><div class="value" style="font-size:1.4rem">12,480</div></div>
+          <div class="stat"><div class="label">Failed</div><div class="value" style="font-size:1.4rem;color:var(--ok)">0</div></div>
+          <div class="stat"><div class="label">Approvers</div><div class="value" style="font-size:1.4rem">2</div></div>
+          <div class="stat"><div class="label">Duration</div><div class="value" style="font-size:1.4rem">4m 12s</div></div>
+        </div>
+        <table class="t" style="margin-top:14px" id="audit-rows"></table>
+      </div>
+    </section>
+
+    <!-- RUN HISTORY -->
+    <section class="panel" id="p-hist">
+      <div class="card card-pad">
+        <div class="row"><h3 style="margin:0">Run history</h3><span class="spacer small muted">All sync and cutover flows · last 7 days</span></div>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:10px">
+          <table class="t">
+            <thead><tr><th>Flow</th><th>Started</th><th>Status</th><th class="num">Rows</th><th class="num">Duration</th></tr></thead>
+            <tbody id="hist-rows"></tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin-top:10px">Click a failed run to view the failed-row drill-in.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  // ---------- Seeded data (fictional) ----------
+  var DAILY_SEED = [
+    { p: "Broccoli Crowns 20 ct", f: "Case GTIN", o: "10 8 4 7 2 …0031", n: "10 8 4 7 2 …0048", s: "ERP item master" },
+    { p: "Romaine Hearts 12 ct", f: "Net weight", o: "24.0 lb", n: "22.5 lb", s: "ERP item master" },
+    { p: "Cauliflower 12 ct", f: "Grower", o: "Sunridge", n: "Verde Valley", s: "Grower assignment" },
+    { p: "Iceberg 24 ct", f: "Pack style", o: "Naked", n: "Film wrap", s: "Spec sheet" },
+    { p: "Brussels Sprouts 10 lb", f: "Country of origin", o: "USA", n: "USA / MEX", s: "Grower assignment" },
+    { p: "Artichoke 18 ct", f: "Label template", o: "STD-2024", n: "STD-2026", s: "Compliance" }
+  ];
+  var LOTS = [
+    { lot: "L-40318", c: "Broccoli", g: "Verde Valley", cs: 640, st: "created" },
+    { lot: "L-40319", c: "Romaine", g: "Sunridge", cs: 512, st: "updated" },
+    { lot: "L-40320", c: "Cauliflower", g: "Bluefield", cs: 288, st: "updated" },
+    { lot: "L-40321", c: "Iceberg", g: "Rio Vista", cs: 704, st: "created" },
+    { lot: "L-40322", c: "Celery", g: "Verde Valley", cs: 396, st: "updated" },
+    { lot: "L-40323", c: "Carrots", g: "Bluefield", cs: 220, st: "created" }
+  ];
+  var AUDIT = [
+    ["Environment", "Production"],
+    ["Executed by", "Sync service (dual-approved)"],
+    ["Approver 1", "Dana · approved"],
+    ["Approver 2", "Alex · approved"],
+    ["Old template", "STD-2024"],
+    ["New template", "STD-2026 (regulatory)"]
+  ];
+  var HIST = [
+    { flow: "Daily Sync", started: "Jul 02 · 6:12a", st: "ok", rows: 6, dur: "0m 09s" },
+    { flow: "Lot Sync", started: "Jul 02 · 6:42a", st: "ok", rows: 162, dur: "1m 04s" },
+    { flow: "Lot Sync", started: "Jul 01 · 6:41a", st: "ok", rows: 158, dur: "1m 01s" },
+    { flow: "Daily Sync", started: "Jul 01 · 6:10a", st: "ok", rows: 4, dur: "0m 07s" },
+    { flow: "Label Cutover (UAT)", started: "Jun 30 · 2:20p", st: "ok", rows: 12480, dur: "4m 08s" },
+    { flow: "Lot Sync", started: "Jun 30 · 6:44a", st: "bad", rows: 149, dur: "0m 52s" },
+    { flow: "Daily Sync", started: "Jun 30 · 6:11a", st: "ok", rows: 7, dur: "0m 10s" }
+  ];
+
+  // ---------- State ----------
+  var state, testMode;
+  function seed() {
+    state = DAILY_SEED.map(function (r) { return Object.assign({ d: "pending" }, r); });
+    testMode = false;
+  }
+
+  var esc = FS.esc;
+
+  function suppressed() { return testMode ? " (suppressed — test mode)" : ""; }
+
+  // ---------- Daily Sync ----------
+  function decisionCell(i, d) {
+    if (d === "approved") return '<span class="badge ok">✓ Approved</span> <button class="btn btn-ghost btn-sm" data-undo="' + i + '">Undo</button>';
+    if (d === "rejected") return '<span class="badge bad">✕ Rejected</span> <button class="btn btn-ghost btn-sm" data-undo="' + i + '">Undo</button>';
+    return '<button class="btn btn-ghost btn-sm" data-app="' + i + '">Approve</button> <button class="btn btn-ghost btn-sm" data-rej="' + i + '">Reject</button>';
+  }
+  function renderDaily() {
+    var body = document.getElementById("daily-rows");
+    body.innerHTML = state.map(function (r, i) {
+      return '<tr><td><b>' + esc(r.p) + '</b></td><td>' + esc(r.f) + '</td>' +
+        '<td><span class="muted">' + esc(r.o) + '</span> <span style="color:var(--accent-deep)">→</span> <b>' + esc(r.n) + '</b></td>' +
+        '<td><span class="badge muted">' + esc(r.s) + '</span></td>' +
+        '<td style="text-align:right;white-space:nowrap">' + decisionCell(i, r.d) + '</td></tr>';
+    }).join('');
+    var app = state.filter(function (r) { return r.d === "approved"; }).length;
+    var rej = state.filter(function (r) { return r.d === "rejected"; }).length;
+    var pend = state.length - app - rej;
+    document.getElementById("approved-n").textContent = app;
+    document.getElementById("ct-app").textContent = app;
+    document.getElementById("ct-rej").textContent = rej;
+    document.getElementById("ct-pend").textContent = pend;
+    document.getElementById("daily-count").textContent = state.length;
+    document.getElementById("push-approved").disabled = app === 0;
+  }
+
+  // ---------- Lot Sync ----------
+  function statusBadge(st) {
+    if (st === "created") return '<span class="badge accent">Created</span>';
+    if (st === "updated") return '<span class="badge info">Updated</span>';
+    if (st === "failed") return '<span class="badge bad">Failed</span>';
+    return '<span class="badge muted">' + st + '</span>';
+  }
+  function renderLots() {
+    document.getElementById("lot-rows").innerHTML = LOTS.map(function (x) {
+      return '<tr><td><b>' + esc(x.lot) + '</b></td><td>' + esc(x.c) + '</td><td>' + esc(x.g) +
+        '</td><td class="num">' + x.cs.toLocaleString("en-US") + '</td><td style="text-align:right">' + statusBadge(x.st) + '</td></tr>';
+    }).join('');
+  }
+
+  // ---------- Run History ----------
+  function histBadge(st) {
+    return st === "ok" ? '<span class="badge ok">● Success</span>' : '<span class="badge bad">● Failed</span>';
+  }
+  function renderHist() {
+    document.getElementById("hist-rows").innerHTML = HIST.map(function (h, i) {
+      var cls = h.st === "bad" ? ' class="clickable" data-hist="' + i + '"' : '';
+      return '<tr' + cls + '><td><b>' + esc(h.flow) + '</b></td><td>' + esc(h.started) + '</td><td>' + histBadge(h.st) +
+        '</td><td class="num">' + h.rows.toLocaleString("en-US") + '</td><td class="num">' + esc(h.dur) + '</td></tr>';
+    }).join('');
+  }
+
+  // ---------- Label Cutover ----------
+  var cut = { dry: false, uat: false, dana: false, alex: false, prod: false };
+  function setStep(id, cls) {
+    var el = document.getElementById(id);
+    el.classList.remove("pending", "done");
+    if (cls) el.classList.add(cls);
+  }
+  function renderCutover() {
+    // Step 1
+    setStep("s1", cut.dry ? "done" : "pending");
+    document.getElementById("btn-dry").disabled = cut.dry;
+    if (cut.dry) document.getElementById("s1-out").innerHTML = '<b style="color:var(--ok)">12,480 labels would change.</b> 0 conflicts · 0 orphaned lots. Safe to proceed to UAT.';
+    // Step 2
+    setStep("s2", cut.uat ? "done" : (cut.dry ? "pending" : "pending"));
+    document.getElementById("btn-uat").disabled = !cut.dry || cut.uat;
+    if (cut.uat) document.getElementById("s2-out").innerHTML = '<b style="color:var(--ok)">UAT execute succeeded.</b> 12,480 labels written to UAT in 4m 08s · 0 failed. Ready for approval.';
+    // Step 3
+    var bothReady = cut.uat;
+    document.getElementById("btn-dana").disabled = !bothReady || cut.dana;
+    document.getElementById("btn-alex").disabled = !bothReady || cut.alex;
+    document.getElementById("ap-dana").className = "badge " + (cut.dana ? "ok" : "muted");
+    document.getElementById("ap-dana").textContent = cut.dana ? "Dana · approved" : "Dana · pending";
+    document.getElementById("ap-alex").className = "badge " + (cut.alex ? "ok" : "muted");
+    document.getElementById("ap-alex").textContent = cut.alex ? "Alex · approved" : "Alex · pending";
+    setStep("s3", (cut.dana && cut.alex) ? "done" : "pending");
+    // Step 4
+    var canProd = cut.dry && cut.uat && cut.dana && cut.alex && !cut.prod;
+    document.getElementById("btn-prod").disabled = !canProd;
+    setStep("s4", cut.prod ? "done" : "pending");
+    if (cut.prod) document.getElementById("s4-out").innerHTML = '<b style="color:var(--ok)">Production cutover complete.</b> 12,480 labels live on template STD-2026.';
+    // Phase badge
+    var phase = "Not started", pcls = "muted";
+    if (cut.prod) { phase = "Complete"; pcls = "ok"; }
+    else if (cut.dana && cut.alex) { phase = "Approved — ready for prod"; pcls = "accent"; }
+    else if (cut.uat) { phase = "Awaiting approvals"; pcls = "warn"; }
+    else if (cut.dry) { phase = "Dry run passed"; pcls = "info"; }
+    var pb = document.getElementById("cut-phase");
+    pb.className = "spacer badge " + pcls;
+    pb.textContent = phase;
+    // Audit
+    document.getElementById("audit-card").style.display = cut.prod ? "block" : "none";
+    if (cut.prod) {
+      document.getElementById("audit-rows").innerHTML = AUDIT.map(function (r) {
+        return '<tr><td class="muted" style="width:38%">' + esc(r[0]) + '</td><td><b>' + esc(r[1]) + '</b></td></tr>';
+      }).join('');
+    }
+  }
+
+  // ---------- Test mode ----------
+  function renderTestMode() {
+    document.getElementById("tm-state").textContent = testMode ? "On" : "Off";
+    document.getElementById("tm-state").style.background = testMode ? "#fff" : "rgba(255,255,255,.2)";
+    document.getElementById("tm-state").style.color = testMode ? "var(--accent-deep)" : "#fff";
+    document.getElementById("testmode").setAttribute("aria-pressed", testMode ? "true" : "false");
+    document.getElementById("tm-banner").style.display = testMode ? "block" : "none";
+  }
+
+  // ---------- Wire up ----------
+  document.getElementById("testmode").addEventListener("click", function () {
+    testMode = !testMode; renderTestMode();
+    FS.toast(testMode ? "Test mode on — writes suppressed" : "Test mode off — live writes enabled");
+  });
+
+  document.getElementById("approve-all").addEventListener("click", function () {
+    state.forEach(function (r) { if (r.d === "pending") r.d = "approved"; });
+    renderDaily(); FS.toast("Approved all pending changes");
+  });
+  document.getElementById("push-approved").addEventListener("click", function () {
+    var app = state.filter(function (r) { return r.d === "approved"; }).length;
+    if (!app) return;
+    FS.toast("Pushed " + app + " changes to the traceability platform" + suppressed());
+    state = state.filter(function (r) { return r.d !== "approved"; });
+    renderDaily();
+  });
+  document.getElementById("daily-rows").addEventListener("click", function (e) {
+    var a = e.target.closest("[data-app]"), r = e.target.closest("[data-rej]"), u = e.target.closest("[data-undo]");
+    if (a) { state[+a.getAttribute("data-app")].d = "approved"; renderDaily(); }
+    else if (r) { state[+r.getAttribute("data-rej")].d = "rejected"; renderDaily(); }
+    else if (u) { state[+u.getAttribute("data-undo")].d = "pending"; renderDaily(); }
+  });
+
+  document.getElementById("lot-run").addEventListener("click", function () {
+    FS.toast("Lot sync started — 162 lots queued" + suppressed());
+  });
+
+  document.getElementById("btn-dry").addEventListener("click", function () {
+    cut.dry = true; renderCutover(); FS.toast("Dry run complete — 12,480 labels would change");
+  });
+  document.getElementById("btn-uat").addEventListener("click", function () {
+    cut.uat = true; renderCutover(); FS.toast("UAT execute succeeded — 0 failed");
+  });
+  document.getElementById("btn-dana").addEventListener("click", function () {
+    cut.dana = true; renderCutover(); FS.toast("Approved as Dana");
+  });
+  document.getElementById("btn-alex").addEventListener("click", function () {
+    cut.alex = true; renderCutover(); FS.toast("Approved as Alex");
+  });
+  document.getElementById("btn-prod").addEventListener("click", function () {
+    cut.prod = true; renderCutover();
+    FS.toast("Production cutover complete — 12,480 labels live" + suppressed());
+  });
+
+  document.getElementById("hist-rows").addEventListener("click", function (e) {
+    var row = e.target.closest("[data-hist]");
+    if (row) FS.toast("Opening 13 failed rows — retry queued after grower fix");
+  });
+
+  window.resetDemo = function () {
+    seed();
+    cut = { dry: false, uat: false, dana: false, alex: false, prod: false };
+    document.getElementById("s1-out").textContent = "Simulates the change with no writes. Reports how many labels would change.";
+    document.getElementById("s2-out").textContent = "Runs the full cutover against the UAT environment for sign-off.";
+    document.getElementById("s4-out").textContent = "Locked until dry run, UAT, and both approvals are complete.";
+    init();
+    FS.toast("Demo reset");
+  };
+  function init() {
+    renderTestMode(); renderDaily(); renderLots(); renderHist(); renderCutover();
+  }
+  seed();
+  init();
+})();
+</script>
+</body>
+</html>

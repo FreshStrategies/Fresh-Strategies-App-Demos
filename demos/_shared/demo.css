@@ -34,6 +34,8 @@ body[data-sector="elec"] { --accent: #1E4E8C; --accent-deep: #14386A; --accent-s
 body[data-sector="fin"]  { --accent: #0E7C7B; --accent-deep: #0A5A59; --accent-soft: #E2F1F1; }
 body[data-sector="platform"] { --accent: #6B4FA0; --accent-deep: #4E3878; --accent-soft: #EFEAF7; }
 body[data-sector="rental"] { --accent: #B85C2E; --accent-deep: #8A4220; --accent-soft: #F8ECE3; }
+body[data-sector="logistics"] { --accent: #2F6E8F; --accent-deep: #1F4E66; --accent-soft: #E4EEF3; }
+body[data-sector="ai"] { --accent: #6D28D9; --accent-deep: #4E1D9E; --accent-soft: #EDE7FB; }
 
 * { box-sizing: border-box; }
 body {

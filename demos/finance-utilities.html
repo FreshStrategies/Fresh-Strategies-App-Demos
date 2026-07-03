@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Finance Data Workbench — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="fin">
+
+<div class="demo-banner">
+  <a href="../index.html#finance">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional company</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Finance Data Workbench</div>
+      <div class="app-header__sub">Northbay Produce Co. · Finance team · <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● Header-driven validation</span></div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <label class="small" style="color:rgba(255,255,255,.85)">Workbook</label>
+      <select id="wbk" class="inp" style="width:auto;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)">
+        <option value="labor">Labor cost workbook</option>
+        <option value="freight">Freight cost workbook</option>
+      </select>
+    </div>
+  </header>
+
+  <div data-tabs>
+    <div class="tabs">
+      <button class="tab active" data-panel="p-ref">Reference Import</button>
+      <button class="tab" data-panel="p-budget">Budget Compare</button>
+      <button class="tab" data-panel="p-demand">Sales Demand</button>
+    </div>
+
+    <!-- ============ REFERENCE IMPORT ============ -->
+    <section class="panel active" id="p-ref">
+      <div class="card card-pad">
+        <div class="row wrap">
+          <div>
+            <h3 style="margin:0">Reference workbook validation</h3>
+            <p class="small muted" style="margin:.3rem 0 0">Each tab is checked against an <b>exact expected layout</b> — table name, column names, and order. Load is <b>all-or-nothing</b>: nothing commits until every table passes.</p>
+          </div>
+          <div class="spacer" style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" id="btn-upload">⬆ Upload workbook</button>
+          </div>
+        </div>
+
+        <div id="upload-empty" style="margin-top:16px">
+          <div class="sigpad" style="height:96px">Drop or upload a labor-cost workbook to validate its 7 reference tables…</div>
+        </div>
+
+        <div id="upload-result" style="display:none;margin-top:16px">
+          <div class="grid grid-4">
+            <div class="stat"><div class="label">Tables checked</div><div class="value" id="rf-total">7</div></div>
+            <div class="stat"><div class="label">Passing</div><div class="value" style="color:var(--ok)" id="rf-pass">6</div></div>
+            <div class="stat"><div class="label">Failing</div><div class="value" style="color:var(--bad)" id="rf-fail">1</div></div>
+            <div class="stat"><div class="label">Rows found</div><div class="value" id="rf-rows">—</div></div>
+          </div>
+
+          <div class="table-wrap" style="margin-top:16px">
+            <table class="t">
+              <thead><tr><th>Reference table</th><th>Expected columns</th><th class="num">Rows</th><th>Status</th></tr></thead>
+              <tbody id="ref-rows"></tbody>
+            </table>
+          </div>
+
+          <div class="row wrap" style="margin-top:16px">
+            <span class="small muted" id="load-hint">1 table failing validation — resolve it to enable an atomic load.</span>
+            <div class="spacer">
+              <button class="btn btn-primary" id="btn-confirm" disabled>Confirm load (all-or-nothing)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ BUDGET COMPARE ============ -->
+    <section class="panel" id="p-budget">
+      <div class="card card-pad">
+        <div class="row wrap">
+          <div>
+            <h3 style="margin:0">FY budget vs. sales demand</h3>
+            <p class="small muted" style="margin:.3rem 0 0">Compared at <b>commodity / region / week</b> grain. Each row gets a DiffSet status so you see exactly what moved between batches.</p>
+          </div>
+          <div class="spacer switcher">
+            <label class="small muted">Version</label>
+            <select id="batch" class="inp" style="width:auto">
+              <option value="b3">Batch 3 (latest)</option>
+              <option value="b2">Batch 2</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" id="btn-budget-upload">⬆ Upload FY budget</button>
+          </div>
+        </div>
+
+        <div id="budget-empty" style="margin-top:16px">
+          <div class="sigpad" style="height:96px">Upload an FY budget workbook to diff it against current sales demand…</div>
+        </div>
+
+        <div id="budget-result" style="display:none;margin-top:16px">
+          <div class="row wrap" style="gap:8px;margin-bottom:14px">
+            <span class="badge muted"><span class="dot muted"></span> Unchanged <b id="c-unch" style="margin-left:2px">0</b></span>
+            <span class="badge warn"><span class="dot warn"></span> Changed <b id="c-chg" style="margin-left:2px">0</b></span>
+            <span class="badge info"><span class="dot info"></span> Proposed-only <b id="c-prop" style="margin-left:2px">0</b></span>
+            <span class="badge bad"><span class="dot bad"></span> Demand-only <b id="c-dem" style="margin-left:2px">0</b></span>
+            <span class="spacer small muted" id="batch-note"></span>
+          </div>
+          <div class="table-wrap">
+            <table class="t">
+              <thead><tr><th>Commodity</th><th>Region</th><th class="num">Week</th><th class="num">Budget qty</th><th class="num">Demand qty</th><th class="num">Δ</th><th>DiffSet</th></tr></thead>
+              <tbody id="budget-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SALES DEMAND ============ -->
+    <section class="panel" id="p-demand">
+      <div class="card card-pad">
+        <div class="row wrap">
+          <div>
+            <h3 style="margin:0">Sales demand cross-tab</h3>
+            <p class="small muted" style="margin:.3rem 0 0">Sales sends a wide cross-tab (weeks across columns). The workbench <b>unpivots</b> it to a tidy grain and auto-maps crop-code suffixes.</p>
+          </div>
+          <div class="spacer">
+            <button class="btn btn-ghost btn-sm" id="btn-demand-upload">⬆ Upload cross-tab</button>
+          </div>
+        </div>
+
+        <div id="demand-empty" style="margin-top:16px">
+          <div class="sigpad" style="height:96px">Upload a sales-demand cross-tab to unpivot and map crop codes…</div>
+        </div>
+
+        <div id="demand-result" style="display:none;margin-top:16px">
+          <div class="grid grid-2">
+            <div>
+              <div class="row"><h3 style="margin:0;font-size:1rem">Unpivoted preview</h3><span class="spacer badge accent" id="unpiv-count"></span></div>
+              <div class="table-wrap" style="margin-top:10px">
+                <table class="t">
+                  <thead><tr><th>Commodity</th><th>Region</th><th class="num">Year</th><th class="num">Week</th><th class="num">Qty</th></tr></thead>
+                  <tbody id="demand-rows"></tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <div class="row"><h3 style="margin:0;font-size:1rem">Crop-code auto-map</h3><span class="spacer badge ok">Resolved</span></div>
+              <div class="table-wrap" style="margin-top:10px">
+                <table class="t">
+                  <thead><tr><th>Suffix</th><th>Mapped to</th><th class="num">Rows</th></tr></thead>
+                  <tbody id="cropmap-rows"></tbody>
+                </table>
+              </div>
+              <p class="small muted" style="margin-top:12px">Suffixes on the raw crop code are decoded against the commodity map so program-specific volume lands in the right bucket automatically — no manual re-keying.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  var esc = FS.esc;
+
+  // ---------- Seed: reference tables (6 pass, 1 fails) ----------
+  var REF_SEED = [
+    { name: "Phase Rates",       cols: "phase_id · phase_name · rate · unit",                rows: 42,  fail: null },
+    { name: "Crew Rates",        cols: "crew_id · crew_name · hourly_rate · shift",           rows: 18,  fail: null },
+    { name: "Block Cost Rates",  cols: "block_id · commodity · cost_per_acre · season",       rows: 96,  fail: null },
+    { name: "Commission Tax",    cols: "region · commission_pct · tax_pct · effective",       rows: 12,  fail: null },
+    { name: "Commodity Map",     cols: "crop_code · commodity · program · suffix",            rows: 64,  fail: null },
+    { name: "Product Reference", cols: "sku · commodity · pack · grade",                      rows: 210, fail: null },
+    { name: "Region Map",        cols: "region_id · region · warehouse · zone",               rows: 8,   fail: "column 'Rate' renamed to 'RegionRate' — header layout no longer matches expected" }
+  ];
+  var ref = [];
+
+  function renderRef() {
+    var pass = ref.filter(function (r) { return !r.fail; }).length;
+    var fail = ref.length - pass;
+    var totalRows = ref.reduce(function (s, r) { return s + r.rows; }, 0);
+    document.getElementById("rf-total").textContent = ref.length;
+    document.getElementById("rf-pass").textContent = pass;
+    document.getElementById("rf-fail").textContent = fail;
+    document.getElementById("rf-rows").textContent = totalRows.toLocaleString("en-US");
+
+    document.getElementById("ref-rows").innerHTML = ref.map(function (r, i) {
+      var status = r.fail
+        ? '<span class="badge bad">✕ FAIL</span> <a href="#" class="small" data-fix="' + i + '" style="margin-left:6px;font-weight:600">Fix mapping →</a>'
+        : '<span class="badge ok">✓ PASS</span>';
+      var sub = r.fail
+        ? '<div class="small" style="color:var(--bad);margin-top:3px">' + esc(r.fail) + '</div>'
+        : '';
+      return '<tr' + (r.fail ? ' class="is-bad"' : '') + '>' +
+        '<td><b>' + esc(r.name) + '</b>' + sub + '</td>' +
+        '<td class="small muted">' + esc(r.cols) + '</td>' +
+        '<td class="num">' + r.rows + '</td>' +
+        '<td>' + status + '</td></tr>';
+    }).join('');
+
+    var confirm = document.getElementById("btn-confirm");
+    var hint = document.getElementById("load-hint");
+    if (fail > 0) {
+      confirm.disabled = true;
+      hint.textContent = fail + " table" + (fail > 1 ? "s" : "") + " failing validation — resolve to enable an atomic load.";
+      hint.style.color = "var(--bad)";
+    } else {
+      confirm.disabled = false;
+      hint.textContent = "All 7 tables match the expected layout — ready to commit in one transaction.";
+      hint.style.color = "var(--ok)";
+    }
+  }
+
+  function uploadRef() {
+    ref = REF_SEED.map(function (r) { return { name: r.name, cols: r.cols, rows: r.rows, fail: r.fail }; });
+    document.getElementById("upload-empty").style.display = "none";
+    document.getElementById("upload-result").style.display = "block";
+    renderRef();
+    FS.toast("Workbook validated · 6 of 7 tables pass");
+  }
+
+  // ---------- Budget Compare ----------
+  var BUDGET = {
+    b3: {
+      note: "Batch 3 · loaded 2 hours ago · 6 rows differ from Batch 2",
+      rows: [
+        { c: "Broccoli",         r: "Northwest DC", w: 31, b: 4200, d: 4200 },
+        { c: "Broccoli",         r: "Midwest DC",   w: 31, b: 3100, d: 3480 },
+        { c: "Cauliflower",      r: "Northwest DC", w: 31, b: 2600, d: 2600 },
+        { c: "Romaine",          r: "Southeast DC", w: 32, b: 5400, d: 4900 },
+        { c: "Iceberg",          r: "Midwest DC",   w: 32, b: 0,    d: 1800 },
+        { c: "Artichoke",        r: "Northwest DC", w: 32, b: 900,  d: 0    },
+        { c: "Brussels Sprouts", r: "Southeast DC", w: 33, b: 1500, d: 1500 },
+        { c: "Carrots",          r: "Midwest DC",   w: 33, b: 3800, d: 4150 },
+        { c: "Celery",           r: "Northwest DC", w: 33, b: 2200, d: 0    }
+      ]
+    },
+    b2: {
+      note: "Batch 2 · prior submission · baseline for comparison",
+      rows: [
+        { c: "Broccoli",         r: "Northwest DC", w: 31, b: 4200, d: 4200 },
+        { c: "Broccoli",         r: "Midwest DC",   w: 31, b: 3100, d: 3100 },
+        { c: "Cauliflower",      r: "Northwest DC", w: 31, b: 2600, d: 2600 },
+        { c: "Romaine",          r: "Southeast DC", w: 32, b: 5400, d: 5400 },
+        { c: "Iceberg",          r: "Midwest DC",   w: 32, b: 0,    d: 0    },
+        { c: "Artichoke",        r: "Northwest DC", w: 32, b: 900,  d: 900  },
+        { c: "Brussels Sprouts", r: "Southeast DC", w: 33, b: 1500, d: 1500 },
+        { c: "Carrots",          r: "Midwest DC",   w: 33, b: 3800, d: 3800 },
+        { c: "Celery",           r: "Northwest DC", w: 33, b: 2200, d: 2200 }
+      ]
+    }
+  };
+  var m0 = FS.money0;
+  function qty(n) { return Number(n).toLocaleString("en-US"); }
+
+  function diffStatus(b, d) {
+    if (b > 0 && d === 0) return { key: "prop", label: "Proposed-only", cls: "info" };
+    if (b === 0 && d > 0) return { key: "dem",  label: "Demand-only",   cls: "bad" };
+    if (b !== d)          return { key: "chg",  label: "Changed",       cls: "warn" };
+    return { key: "unch", label: "Unchanged", cls: "muted" };
+  }
+
+  function renderBudget() {
+    var key = document.getElementById("batch").value;
+    var data = BUDGET[key];
+    var counts = { unch: 0, chg: 0, prop: 0, dem: 0 };
+    document.getElementById("batch-note").textContent = data.note;
+    document.getElementById("budget-rows").innerHTML = data.rows.map(function (r) {
+      var st = diffStatus(r.b, r.d);
+      counts[st.key]++;
+      var delta = r.d - r.b;
+      var dCol = delta === 0 ? "inherit" : (delta < 0 ? "var(--bad)" : "var(--ok)");
+      var dTxt = delta === 0 ? "—" : (delta > 0 ? "+" : "") + qty(delta);
+      return '<tr><td><b>' + esc(r.c) + '</b></td><td>' + esc(r.r) + '</td><td class="num">' + r.w +
+        '</td><td class="num">' + qty(r.b) + '</td><td class="num">' + qty(r.d) +
+        '</td><td class="num" style="color:' + dCol + '">' + dTxt +
+        '</td><td><span class="badge ' + st.cls + '"><span class="dot ' + st.cls + '"></span> ' + st.label + '</span></td></tr>';
+    }).join('');
+    document.getElementById("c-unch").textContent = counts.unch;
+    document.getElementById("c-chg").textContent = counts.chg;
+    document.getElementById("c-prop").textContent = counts.prop;
+    document.getElementById("c-dem").textContent = counts.dem;
+  }
+
+  function uploadBudget() {
+    document.getElementById("budget-empty").style.display = "none";
+    document.getElementById("budget-result").style.display = "block";
+    renderBudget();
+    FS.toast("FY budget diffed against sales demand");
+  }
+
+  // ---------- Sales Demand ----------
+  var DEMAND_ROWS = [
+    { c: "Broccoli",         r: "Northwest DC", y: 2026, w: 31, q: 4200 },
+    { c: "Broccoli",         r: "Northwest DC", y: 2026, w: 32, q: 4380 },
+    { c: "Cauliflower",      r: "Midwest DC",   y: 2026, w: 31, q: 2600 },
+    { c: "Cauliflower",      r: "Midwest DC",   y: 2026, w: 32, q: 2710 },
+    { c: "Romaine",          r: "Southeast DC", y: 2026, w: 31, q: 4900 },
+    { c: "Iceberg",          r: "Southeast DC", y: 2026, w: 32, q: 1800 },
+    { c: "Artichoke",        r: "Northwest DC", y: 2026, w: 31, q: 900  },
+    { c: "Brussels Sprouts", r: "Midwest DC",   y: 2026, w: 33, q: 1500 },
+    { c: "Carrots",          r: "Midwest DC",   y: 2026, w: 33, q: 4150 },
+    { c: "Celery",           r: "Northwest DC", y: 2026, w: 33, q: 2200 }
+  ];
+  var CROP_MAP = [
+    { sfx: "-C", to: "BULK — bulk pack channel",        n: 138 },
+    { sfx: "-V", to: "VA program — value-added program", n: 46  },
+    { sfx: "-O", to: "ORG — organic line",               n: 52  },
+    { sfx: "-R", to: "RETAIL — retail clamshell",        n: 74  }
+  ];
+
+  function renderDemand() {
+    document.getElementById("demand-rows").innerHTML = DEMAND_ROWS.map(function (r) {
+      return '<tr><td><b>' + esc(r.c) + '</b></td><td>' + esc(r.r) + '</td><td class="num">' + r.y +
+        '</td><td class="num">' + r.w + '</td><td class="num">' + qty(r.q) + '</td></tr>';
+    }).join('');
+    document.getElementById("unpiv-count").textContent = DEMAND_ROWS.length + " rows unpivoted";
+    document.getElementById("cropmap-rows").innerHTML = CROP_MAP.map(function (r) {
+      return '<tr><td><b><code style="font-size:.85rem">' + esc(r.sfx) + '</code></b></td><td class="small">' + esc(r.to) +
+        '</td><td class="num">' + r.n + '</td></tr>';
+    }).join('');
+  }
+
+  function uploadDemand() {
+    document.getElementById("demand-empty").style.display = "none";
+    document.getElementById("demand-result").style.display = "block";
+    renderDemand();
+    FS.toast("Cross-tab unpivoted · crop codes mapped");
+  }
+
+  // ---------- Wire up ----------
+  document.getElementById("btn-upload").addEventListener("click", uploadRef);
+  document.getElementById("btn-budget-upload").addEventListener("click", uploadBudget);
+  document.getElementById("btn-demand-upload").addEventListener("click", uploadDemand);
+  document.getElementById("batch").addEventListener("change", function () {
+    if (document.getElementById("budget-result").style.display !== "none") renderBudget();
+  });
+
+  document.getElementById("btn-confirm").addEventListener("click", function () {
+    if (this.disabled) return;
+    FS.toast("All 7 tables loaded in one transaction");
+    this.textContent = "✓ Loaded (transaction committed)";
+    this.disabled = true;
+  });
+
+  document.getElementById("ref-rows").addEventListener("click", function (e) {
+    var fix = e.target.closest("[data-fix]");
+    if (!fix) return;
+    e.preventDefault();
+    var i = +fix.getAttribute("data-fix");
+    ref[i].fail = null;
+    renderRef();
+    FS.toast("Mapping fixed · '" + ref[i].name + "' now passes");
+  });
+
+  window.resetDemo = function () {
+    ref = [];
+    document.getElementById("wbk").value = "labor";
+    document.getElementById("batch").value = "b3";
+    document.getElementById("upload-empty").style.display = "block";
+    document.getElementById("upload-result").style.display = "none";
+    var cb = document.getElementById("btn-confirm");
+    cb.textContent = "Confirm load (all-or-nothing)";
+    cb.disabled = true;
+    document.getElementById("budget-empty").style.display = "block";
+    document.getElementById("budget-result").style.display = "none";
+    document.getElementById("demand-empty").style.display = "block";
+    document.getElementById("demand-result").style.display = "none";
+    FS.toast("Demo reset");
+  };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Packaging Procurement &amp; EPR — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="logistics">
+
+<div class="demo-banner">
+  <a href="../index.html#logistics">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional company</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 8l9-4 9 4v8l-9 4-9-4z"/><path d="M3 8l9 4 9-4"/><path d="M12 12v8"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Packaging Procurement &amp; EPR</div>
+      <div class="app-header__sub">Northbay Produce Co. · <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● Synced to the ERP</span></div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <label class="small" style="color:rgba(255,255,255,.85)">Site</label>
+      <select id="site" class="inp" style="width:auto;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)">
+        <option value="all">All warehouses</option>
+        <option value="nw">Northwest DC</option>
+        <option value="mw">Midwest DC</option>
+        <option value="se">Southeast DC</option>
+      </select>
+    </div>
+  </header>
+
+  <div data-tabs>
+    <div class="tabs">
+      <button class="tab active" data-panel="p-dash">Dashboard</button>
+      <button class="tab" data-panel="p-fc">Forecast</button>
+      <button class="tab" data-panel="p-epr">EPR</button>
+      <button class="tab" data-panel="p-set">Settings</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section class="panel active" id="p-dash">
+      <div class="grid grid-3">
+        <div class="stat"><div class="label">Packaging classes tracked</div><div class="value">4</div><div class="delta up">Lead-time 1–4 wk</div></div>
+        <div class="stat"><div class="label">Items below reorder</div><div class="value" id="k-below" style="color:var(--bad)">—</div><div class="delta down">Cover under lead time</div></div>
+        <div class="stat"><div class="label">Open POs</div><div class="value" id="k-po">3</div><div class="delta up">Inbound this week</div></div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="row"><h3 style="margin:0">Packaging inventory</h3><span class="spacer small muted">Edit <b>On hand</b> — cover, reorder flag &amp; suggested qty recompute live</span></div>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:12px">
+          <table class="t">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="num">Class</th>
+                <th class="num">On hand</th>
+                <th class="num">Inbound</th>
+                <th class="num">Weekly burn</th>
+                <th class="num">Cover</th>
+                <th>Reorder?</th>
+                <th class="num">Suggested qty</th>
+              </tr>
+            </thead>
+            <tbody id="inv-rows"></tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin:12px 0 0">Suggested order qty targets a full lead-time of cover plus one week of safety, rounded up to the class order multiple. Click any row for the reorder detail.</p>
+      </div>
+    </section>
+
+    <!-- FORECAST -->
+    <section class="panel" id="p-fc">
+      <div class="grid grid-2">
+        <div class="card card-pad">
+          <div class="row"><h3 style="margin:0">Weekly burn — 13-week baseline</h3><span class="spacer badge accent" id="fc-item-label">All items</span></div>
+          <p class="small muted" style="margin:6px 0 0">Cases pulled per week (all packaging, converted to equivalent units).</p>
+          <div class="bars" id="fc-bars" style="margin-top:14px"></div>
+          <label class="row" style="margin-top:30px;gap:8px;cursor:pointer">
+            <input type="checkbox" id="fc-holiday" />
+            <span class="small"><b>Holiday uplift</b> — bump the pull-week (weeks 9–11) for seasonal demand</span>
+          </label>
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 6px">Day-of-week profile</h3>
+          <p class="small muted" style="margin:0 0 10px">When burn actually lands across the week — drives safety timing.</p>
+          <div class="bars" id="dow-bars" style="margin-top:14px"></div>
+        </div>
+      </div>
+      <div class="card card-pad" style="margin-top:16px">
+        <h3 style="margin:0 0 6px">How the forecast works</h3>
+        <p class="small muted" style="margin:0">Northbay forecasts packaging by <b>velocity</b>, not by a bill of materials. Each item's weekly burn is the trailing pull rate from the ERP, smoothed over 13 weeks and adjusted by the day-of-week profile and any seasonal uplift. Because packaging maps cleanly to case volume, this beats trying to explode a BOM per SKU — and it recomputes the moment on-hand or inbound changes.</p>
+      </div>
+    </section>
+
+    <!-- EPR -->
+    <section class="panel" id="p-epr">
+      <div class="grid grid-3">
+        <div class="stat"><div class="label">Reporting jurisdiction</div><div class="value" style="font-size:1.3rem">EPR-1</div><div class="delta up">Producer registered</div></div>
+        <div class="stat"><div class="label">Total annual weight</div><div class="value" id="epr-tons" style="font-size:1.3rem">—</div><div class="delta up">Across 3 material types</div></div>
+        <div class="stat"><div class="label">Estimated annual EPR fee</div><div class="value" id="epr-total" style="font-size:1.3rem;color:var(--accent-deep)">—</div><div class="delta up">Eco-modulated by recycled %</div></div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="row">
+          <h3 style="margin:0">Materials by type</h3>
+          <button class="btn btn-primary btn-sm spacer" id="epr-report">Generate quarterly EPR report</button>
+        </div>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:12px">
+          <table class="t">
+            <thead>
+              <tr>
+                <th>Material type</th>
+                <th class="num">Annual weight (tons)</th>
+                <th class="num">Recycled content</th>
+                <th class="num">Fee rate ($/ton)</th>
+                <th class="num">Estimated fee</th>
+              </tr>
+            </thead>
+            <tbody id="epr-rows"></tbody>
+            <tfoot>
+              <tr>
+                <td>Total EPR fee</td>
+                <td class="num" id="epr-ft-tons"></td>
+                <td class="num" id="epr-ft-rec"></td>
+                <td class="num">—</td>
+                <td class="num" id="epr-ft-fee"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p class="small muted" style="margin:12px 0 0">Material usage flows straight from procurement receipts — every PO carries a material class and recycled-content spec, so EPR weight and eco-modulated fees roll up automatically. No separate data entry, no year-end scramble.</p>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="panel" id="p-set">
+      <div class="grid grid-2">
+        <div class="card card-pad">
+          <h3 style="margin:0 0 6px">Lead-time classes</h3>
+          <p class="small muted" style="margin:0 0 10px">Lead time and safety stock per class — drives cover thresholds and suggested qty.</p>
+          <div class="table-wrap" style="box-shadow:none;border:none">
+            <table class="t">
+              <thead><tr><th>Class</th><th class="num">Lead time (wk)</th><th class="num">Safety (wk)</th><th class="num">Order multiple</th></tr></thead>
+              <tbody id="class-rows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 6px">Product overrides</h3>
+          <p class="small muted" style="margin:0 0 10px">Per-item tweaks that override the class default. Editable.</p>
+          <div class="table-wrap" style="box-shadow:none;border:none">
+            <table class="t">
+              <thead><tr><th>Item</th><th class="num">Override burn/wk</th><th class="num">Min order</th></tr></thead>
+              <tbody id="override-rows"></tbody>
+            </table>
+          </div>
+          <p class="help" style="margin-top:12px">Edits here recompute the Dashboard on Reset or tab return.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Reorder detail drawer -->
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="item-drawer">
+  <div class="drawer__head"><h3 style="margin:0" id="dd-title">Item</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body" id="dd-body"></div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  var m = FS.money0;
+
+  // ---------- Seed (fictional) ----------
+  // Lead-time classes: lead + safety (weeks), order multiple (units)
+  var SEED_CLASSES = {
+    1: { lead: 1, safety: 1, mult: 500 },
+    2: { lead: 2, safety: 1, mult: 500 },
+    3: { lead: 3, safety: 1, mult: 250 },
+    4: { lead: 4, safety: 2, mult: 250 }
+  };
+  // Packaging items
+  var SEED_ITEMS = [
+    { id: "wc2", name: "Waxed Carton 2-dz", cls: 2, onhand: 4200, inbound: 2000, burn: 2600 },
+    { id: "rpc", name: "RPC Tote",          cls: 1, onhand: 9800, inbound: 0,    burn: 3100 },
+    { id: "liner", name: "Case Liner",      cls: 3, onhand: 1800, inbound: 1500, burn: 2400 },
+    { id: "shrink", name: "Shrink Film Roll", cls: 4, onhand: 620, inbound: 0,   burn: 210 },
+    { id: "pallet", name: "Pallet Sheet",   cls: 2, onhand: 3400, inbound: 800,  burn: 900 },
+    { id: "label", name: "Thermal Label Stock", cls: 1, onhand: 14000, inbound: 6000, burn: 5200 }
+  ];
+  // EPR material types
+  var SEED_MATERIALS = [
+    { type: "Fiber / Corrugate", tons: 812, recycled: 68, rate: 210 },
+    { type: "Rigid Plastic",     tons: 146, recycled: 34, rate: 640 },
+    { type: "Film / Flexible",   tons: 63,  recycled: 12, rate: 890 }
+  ];
+  // Product overrides (Settings)
+  var SEED_OVERRIDES = [
+    { id: "liner", name: "Case Liner", burn: 2400, min: 2500 },
+    { id: "shrink", name: "Shrink Film Roll", burn: 210, min: 250 }
+  ];
+
+  // Site multipliers (affect burn/onhand scaling)
+  var SITE = { all: 1, nw: 0.44, mw: 0.34, se: 0.22 };
+
+  var CLASSES, ITEMS, MATERIALS, OVERRIDES;
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+  // eco-modulation: higher recycled content shaves the effective fee rate
+  function ecoRate(rate, recycled){ return rate * (1 - (recycled/100) * 0.5); }
+
+  // ---------- Dashboard ----------
+  function coverWeeks(it){ return it.burn > 0 ? (it.onhand + it.inbound) / it.burn : 99; }
+  function needsReorder(it){
+    var c = CLASSES[it.cls];
+    return coverWeeks(it) < (c.lead + c.safety);
+  }
+  function suggestedQty(it){
+    if (!needsReorder(it)) return 0;
+    var c = CLASSES[it.cls];
+    var target = (c.lead + c.safety + 1) * it.burn;          // desired position
+    var deficit = target - (it.onhand + it.inbound);
+    if (deficit <= 0) return 0;
+    return Math.ceil(deficit / c.mult) * c.mult;              // round to order multiple
+  }
+
+  function renderInv() {
+    var s = SITE[document.getElementById("site").value];
+    var below = 0;
+    document.getElementById("inv-rows").innerHTML = ITEMS.map(function (it, i) {
+      var cov = coverWeeks(it), reorder = needsReorder(it), sug = suggestedQty(it);
+      if (reorder) below++;
+      var covBadge = reorder ? 'bad' : (cov < CLASSES[it.cls].lead + CLASSES[it.cls].safety + 1 ? 'warn' : 'ok');
+      return '<tr class="clickable" data-item="' + i + '">' +
+        '<td><b>' + FS.esc(it.name) + '</b></td>' +
+        '<td class="num"><span class="badge muted">' + it.cls + ' wk</span></td>' +
+        '<td class="num"><input class="inp onhand-inp" data-i="' + i + '" style="width:92px;text-align:right;padding:.3rem .5rem" value="' + it.onhand + '" /></td>' +
+        '<td class="num">' + it.inbound.toLocaleString() + '</td>' +
+        '<td class="num">' + it.burn.toLocaleString() + '</td>' +
+        '<td class="num"><span class="badge ' + covBadge + '">' + cov.toFixed(1) + ' wk</span></td>' +
+        '<td>' + (reorder ? '<span class="badge bad">● Reorder</span>' : '<span class="badge ok">● OK</span>') + '</td>' +
+        '<td class="num"><b>' + (sug ? sug.toLocaleString() : '—') + '</b></td>' +
+        '</tr>';
+    }).join('');
+    document.getElementById("k-below").textContent = below;
+    // wire the on-hand inputs
+    document.querySelectorAll(".onhand-inp").forEach(function (inp) {
+      inp.addEventListener("click", function (e) { e.stopPropagation(); });
+      inp.addEventListener("input", function () {
+        var i = +inp.getAttribute("data-i");
+        var v = parseInt(inp.value, 10);
+        ITEMS[i].onhand = isNaN(v) ? 0 : v;
+        renderInv();
+      });
+    });
+  }
+
+  // ---------- Forecast ----------
+  var BASE13 = [58,61,63,60,64,66,62,65,74,79,77,68,64];
+  var DOW = { labels: ["Mon","Tue","Wed","Thu","Fri","Sat"], vals: [78,84,72,90,66,28] };
+  function drawForecast() {
+    var holiday = document.getElementById("fc-holiday").checked;
+    var data = BASE13.map(function (v, i) { return (holiday && i >= 8 && i <= 10) ? Math.round(v * 1.28) : v; });
+    var max = Math.max.apply(null, data);
+    document.getElementById("fc-bars").innerHTML = data.map(function (v, i) {
+      var pull = i >= 8 && i <= 10;
+      return '<div class="bar' + (pull && holiday ? '' : '') + '" style="height:' + (v / max * 100) + '%' + (pull ? ';opacity:1' : '') + '"><span>' + (i + 1) + '</span></div>';
+    }).join('');
+    var dmax = Math.max.apply(null, DOW.vals);
+    document.getElementById("dow-bars").innerHTML = DOW.vals.map(function (v, i) {
+      return '<div class="bar alt" style="height:' + (v / dmax * 100) + '%"><span>' + DOW.labels[i] + '</span></div>';
+    }).join('');
+  }
+
+  // ---------- EPR ----------
+  function renderEPR() {
+    var totTons = 0, totFee = 0, wRec = 0;
+    document.getElementById("epr-rows").innerHTML = MATERIALS.map(function (mat) {
+      var eff = ecoRate(mat.rate, mat.recycled);
+      var fee = eff * mat.tons;
+      totTons += mat.tons; totFee += fee; wRec += mat.recycled * mat.tons;
+      return '<tr>' +
+        '<td><b>' + FS.esc(mat.type) + '</b></td>' +
+        '<td class="num">' + mat.tons.toLocaleString() + '</td>' +
+        '<td class="num"><span class="badge ' + (mat.recycled >= 50 ? 'ok' : mat.recycled >= 25 ? 'warn' : 'bad') + '">' + mat.recycled + '%</span></td>' +
+        '<td class="num">' + m(mat.rate) + '</td>' +
+        '<td class="num">' + m(fee) + '</td>' +
+        '</tr>';
+    }).join('');
+    document.getElementById("epr-ft-tons").textContent = totTons.toLocaleString();
+    document.getElementById("epr-ft-rec").textContent = (wRec / totTons).toFixed(0) + '% avg';
+    document.getElementById("epr-ft-fee").textContent = m(totFee);
+    document.getElementById("epr-tons").textContent = totTons.toLocaleString() + ' t';
+    document.getElementById("epr-total").textContent = m(totFee);
+  }
+
+  // ---------- Settings ----------
+  function renderClasses() {
+    document.getElementById("class-rows").innerHTML = Object.keys(CLASSES).map(function (k) {
+      var c = CLASSES[k];
+      return '<tr><td><b>Class ' + k + '</b></td>' +
+        '<td class="num">' + c.lead + '</td>' +
+        '<td class="num">' + c.safety + '</td>' +
+        '<td class="num">' + c.mult.toLocaleString() + '</td></tr>';
+    }).join('');
+  }
+  function renderOverrides() {
+    document.getElementById("override-rows").innerHTML = OVERRIDES.map(function (o, i) {
+      return '<tr><td><b>' + FS.esc(o.name) + '</b></td>' +
+        '<td class="num"><input class="inp ov-burn" data-i="' + i + '" style="width:90px;text-align:right;padding:.3rem .5rem" value="' + o.burn + '" /></td>' +
+        '<td class="num"><input class="inp ov-min" data-i="' + i + '" style="width:90px;text-align:right;padding:.3rem .5rem" value="' + o.min + '" /></td></tr>';
+    }).join('');
+    document.querySelectorAll(".ov-burn").forEach(function (inp) {
+      inp.addEventListener("input", function () {
+        var i = +inp.getAttribute("data-i"); var v = parseInt(inp.value, 10);
+        OVERRIDES[i].burn = isNaN(v) ? 0 : v;
+        var it = ITEMS.filter(function (x) { return x.id === OVERRIDES[i].id; })[0];
+        if (it) it.burn = OVERRIDES[i].burn;
+      });
+    });
+    document.querySelectorAll(".ov-min").forEach(function (inp) {
+      inp.addEventListener("input", function () {
+        var i = +inp.getAttribute("data-i"); var v = parseInt(inp.value, 10);
+        OVERRIDES[i].min = isNaN(v) ? 0 : v;
+      });
+    });
+  }
+
+  // ---------- Drawer ----------
+  function openItem(i) {
+    var it = ITEMS[i], c = CLASSES[it.cls], cov = coverWeeks(it), reorder = needsReorder(it), sug = suggestedQty(it);
+    document.getElementById("dd-title").textContent = it.name;
+    document.getElementById("dd-body").innerHTML =
+      '<div class="grid grid-2">' +
+        '<div class="stat"><div class="label">Cover</div><div class="value" style="color:' + (reorder ? 'var(--bad)' : 'inherit') + '">' + cov.toFixed(1) + ' wk</div></div>' +
+        '<div class="stat"><div class="label">Suggested order</div><div class="value">' + (sug ? sug.toLocaleString() : '—') + '</div></div>' +
+      '</div>' +
+      '<div class="table-wrap" style="box-shadow:none;border:none;margin-top:16px"><table class="t">' +
+        '<tr><td>Lead-time class</td><td class="num">Class ' + it.cls + ' · ' + c.lead + ' wk</td></tr>' +
+        '<tr><td>Safety stock</td><td class="num">' + c.safety + ' wk</td></tr>' +
+        '<tr><td>On hand</td><td class="num">' + it.onhand.toLocaleString() + '</td></tr>' +
+        '<tr><td>Inbound</td><td class="num">' + it.inbound.toLocaleString() + '</td></tr>' +
+        '<tr><td>Weekly burn</td><td class="num">' + it.burn.toLocaleString() + '</td></tr>' +
+        '<tr><td>Reorder point (units)</td><td class="num">' + ((c.lead + c.safety) * it.burn).toLocaleString() + '</td></tr>' +
+        '<tr><td>Order multiple</td><td class="num">' + c.mult.toLocaleString() + '</td></tr>' +
+      '</table></div>' +
+      '<p class="small muted" style="margin-top:14px">' +
+        (reorder
+          ? 'Cover is below lead time plus safety, so this item trips a reorder. Suggested qty raises the position to ' + (c.lead + c.safety + 1) + ' weeks and rounds up to the class order multiple.'
+          : 'Cover is healthy — above lead time plus safety. No order needed this cycle.') +
+      '</p>' +
+      (reorder ? '<button class="btn btn-primary" style="margin-top:14px" id="dd-po">Draft PO for ' + sug.toLocaleString() + ' units</button>' : '');
+    FS.openDrawer("item-drawer");
+    var po = document.getElementById("dd-po");
+    if (po) po.addEventListener("click", function () { FS.toast("Draft PO created for " + it.name); FS.closeDrawer(); });
+  }
+
+  // ---------- Wire ----------
+  document.getElementById("site").addEventListener("change", function () { renderInv(); });
+  document.getElementById("fc-holiday").addEventListener("change", drawForecast);
+  document.getElementById("epr-report").addEventListener("click", function () { FS.toast("Quarterly EPR report generated"); });
+  document.addEventListener("click", function (e) {
+    var row = e.target.closest("[data-item]");
+    if (row && !e.target.closest("input")) openItem(+row.getAttribute("data-item"));
+  });
+
+  window.resetDemo = function () {
+    document.getElementById("site").value = "all";
+    document.getElementById("fc-holiday").checked = false;
+    init();
+    FS.toast("Demo reset");
+  };
+
+  function init() {
+    CLASSES = clone(SEED_CLASSES);
+    ITEMS = clone(SEED_ITEMS);
+    MATERIALS = clone(SEED_MATERIALS);
+    OVERRIDES = clone(SEED_OVERRIDES);
+    renderInv();
+    drawForecast();
+    renderEPR();
+    renderClasses();
+    renderOverrides();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

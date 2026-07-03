@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Grower Pooling & Settlement — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="fin">
+
+<div class="demo-banner">
+  <a href="../index.html#finance">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional company</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 7h18"/><path d="M6 7v13h12V7"/><path d="M9 11h6"/><path d="M9 15h6"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Grower Pooling &amp; Settlement</div>
+      <div class="app-header__sub">Northbay Produce Co. · <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● Books &amp; ERP linked</span></div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <label class="small" style="color:rgba(255,255,255,.85)">Active pool</label>
+      <select id="pool-select" class="inp" style="width:auto;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)"></select>
+    </div>
+  </header>
+
+  <div data-tabs>
+    <div class="tabs">
+      <button class="tab active" data-panel="p-pools">Pools</button>
+      <button class="tab" data-panel="p-run">Settlement Run</button>
+      <button class="tab" data-panel="p-growers">Growers</button>
+      <button class="tab" data-panel="p-packet">Packet</button>
+    </div>
+
+    <!-- POOLS -->
+    <section class="panel active" id="p-pools">
+      <div class="grid grid-4">
+        <div class="stat"><div class="label">Season pools</div><div class="value" id="k-pools"></div></div>
+        <div class="stat"><div class="label">Growers in pools</div><div class="value" id="k-growers"></div></div>
+        <div class="stat"><div class="label">Gross to settle</div><div class="value" id="k-gross"></div></div>
+        <div class="stat"><div class="label">Open / Settling</div><div class="value" id="k-open"></div></div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="row"><h3 style="margin:0">Season pools</h3><span class="spacer small muted">Click a pool to make it active →</span></div>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:10px">
+          <table class="t">
+            <thead><tr><th>Pool</th><th>Commodity</th><th>Region</th><th class="num">Growers</th><th class="num">Gross</th><th>Status</th></tr></thead>
+            <tbody id="pool-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTLEMENT RUN -->
+    <section class="panel" id="p-run">
+      <div class="card card-pad">
+        <div class="row">
+          <h3 style="margin:0">Settlement run</h3>
+          <span class="badge accent" id="run-pool-label"></span>
+          <span class="spacer"></span>
+          <button class="btn btn-ghost btn-sm" id="run-reset" style="display:none">↺ Restart run</button>
+          <button class="btn btn-primary btn-sm" id="run-btn">▶ Run settlement</button>
+        </div>
+        <p class="small muted" style="margin:6px 0 0">Six-step pipeline. Each click advances one step and posts its result. The final step unlocks grower packet generation.</p>
+
+        <div id="stepper" style="margin-top:18px"></div>
+
+        <div class="card" style="margin-top:18px;background:var(--d-surface-2);border-style:dashed">
+          <div class="card-pad">
+            <div class="row"><h3 style="margin:0;font-size:.95rem">Run log</h3><span class="spacer small muted" id="run-progress">Not started</span></div>
+            <ul class="timeline" id="run-log" style="margin-top:12px"><li class="pending"><span class="node"></span><span class="tl-t">Awaiting run</span><div class="tl-s">Press “Run settlement” to ingest sales &amp; charges.</div></li></ul>
+            <div style="margin-top:14px">
+              <button class="btn btn-primary" id="gen-btn" disabled>📄 Generate grower packets</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GROWERS -->
+    <section class="panel" id="p-growers">
+      <div class="card card-pad">
+        <div class="row"><h3 style="margin:0">Grower settlement — <span id="grow-pool-label"></span></h3><span class="spacer small muted">Click a grower for settlement detail →</span></div>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:10px">
+          <table class="t">
+            <thead><tr><th>Grower</th><th class="num">Blocks</th><th class="num">Gross</th><th class="num">Charges</th><th class="num">Pool adj</th><th class="num">Advances</th><th class="num">Net payable</th></tr></thead>
+            <tbody id="grower-rows"></tbody>
+            <tfoot id="grower-foot"></tfoot>
+          </table>
+        </div>
+        <p class="small muted" style="margin:12px 0 0">Net payable = Gross − Charges + Pool adjustment − Advances. Pool adjustments across all growers net to $0 — the equalization moves value between growers, it does not create or destroy it.</p>
+      </div>
+    </section>
+
+    <!-- PACKET -->
+    <section class="panel" id="p-packet">
+      <div class="row" style="margin-bottom:12px">
+        <label class="small muted">Preview packet for</label>
+        <select id="packet-select" class="inp" style="width:auto"></select>
+        <span class="spacer"></span>
+        <button class="btn btn-ghost btn-sm" id="dl-btn">⬇ Download PDF</button>
+      </div>
+      <div id="packet-paper"></div>
+    </section>
+  </div>
+</div>
+
+<!-- Grower detail drawer -->
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="grower-drawer">
+  <div class="drawer__head"><h3 style="margin:0" id="gd-title">Grower</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body" id="gd-body"></div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  var m = FS.money0, m2 = FS.money;
+
+  // ---------- Seeded data (fictional) ----------
+  // Each pool carries its own grower ledger. Amounts are internally consistent:
+  //   net = gross - charges + adj - advances ; sum(adj) === 0 per pool.
+  var SEED = {
+    pools: [
+      {
+        id: "iceberg", name: "Coastal Iceberg 2026", commodity: "Iceberg",
+        region: "Coastal", season: "2026", status: "Settling", poolPrice: 14.20,
+        growers: [
+          { name: "Verde Valley", blocks: 6, cartons: 41200, gross: 585040, charges: 96430, adj:  8120, advances: 180000 },
+          { name: "Sunridge",     blocks: 4, cartons: 28600, gross: 406120, charges: 71540, adj: -4360, advances: 120000 },
+          { name: "Bluefield",    blocks: 5, cartons: 33900, gross: 481380, charges: 82910, adj: -6210, advances: 150000 },
+          { name: "Rio Vista",   blocks: 3, cartons: 19400, gross: 275480, charges: 47180, adj:  2450, advances:  90000 }
+        ]
+      },
+      {
+        id: "romaine", name: "Desert Romaine 2026", commodity: "Romaine",
+        region: "Desert", season: "2026", status: "Open", poolPrice: 12.60,
+        growers: [
+          { name: "Verde Valley", blocks: 4, cartons: 22100, gross: 278460, charges: 49820, adj:  3980, advances: 100000 },
+          { name: "Sunridge",     blocks: 5, cartons: 27400, gross: 345240, charges: 60110, adj: -5120, advances: 130000 },
+          { name: "Bluefield",    blocks: 3, cartons: 16800, gross: 211680, charges: 37640, adj:  1140, advances:  70000 }
+        ]
+      },
+      {
+        id: "broccoli", name: "Valley Broccoli 2026", commodity: "Broccoli",
+        region: "Valley", season: "2026", status: "Closed", poolPrice: 16.80,
+        growers: [
+          { name: "Sunridge",   blocks: 5, cartons: 24800, gross: 416640, charges: 72300, adj:  6540, advances: 160000 },
+          { name: "Bluefield",  blocks: 4, cartons: 19200, gross: 322560, charges: 55870, adj: -3210, advances: 120000 },
+          { name: "Rio Vista", blocks: 6, cartons: 29600, gross: 497280, charges: 84220, adj: -3330, advances: 190000 }
+        ]
+      }
+    ]
+  };
+
+  // deep clone so Reset restores the seed
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  var state, activePoolId, runStep, runPoolId;
+
+  function poolById(id) { return state.pools.filter(function (p) { return p.id === id; })[0]; }
+  function activePool() { return poolById(activePoolId); }
+  function poolGross(p) { return p.growers.reduce(function (s, g) { return s + g.gross; }, 0); }
+  function net(g) { return g.gross - g.charges + g.adj - g.advances; }
+
+  function statusBadge(s) {
+    var cls = s === "Open" ? "info" : (s === "Settling" ? "warn" : "ok");
+    return '<span class="badge ' + cls + '">' + s + '</span>';
+  }
+
+  // ---------- POOLS ----------
+  function renderPools() {
+    var totalGrowerRows = 0, gross = 0, openish = 0, growerNames = {};
+    state.pools.forEach(function (p) {
+      p.growers.forEach(function (g) { growerNames[g.name] = 1; });
+      totalGrowerRows += p.growers.length;
+      gross += poolGross(p);
+      if (p.status !== "Closed") openish++;
+    });
+    document.getElementById("k-pools").textContent = state.pools.length;
+    document.getElementById("k-growers").textContent = Object.keys(growerNames).length;
+    document.getElementById("k-gross").textContent = m(gross);
+    document.getElementById("k-open").textContent = openish + " / " + state.pools.length;
+
+    document.getElementById("pool-rows").innerHTML = state.pools.map(function (p) {
+      var active = p.id === activePoolId;
+      return '<tr class="clickable" data-pool="' + p.id + '"' + (active ? ' style="background:var(--accent-soft)"' : '') + '>' +
+        '<td><b>' + p.name + '</b>' + (active ? ' <span class="badge accent">active</span>' : '') + '</td>' +
+        '<td>' + p.commodity + '</td>' +
+        '<td>' + p.region + '</td>' +
+        '<td class="num">' + p.growers.length + '</td>' +
+        '<td class="num">' + m(poolGross(p)) + '</td>' +
+        '<td>' + statusBadge(p.status) + '</td></tr>';
+    }).join('');
+  }
+
+  // ---------- POOL SELECTORS ----------
+  function fillPoolSelect() {
+    var sel = document.getElementById("pool-select");
+    sel.innerHTML = state.pools.map(function (p) {
+      return '<option value="' + p.id + '">' + p.name + '</option>';
+    }).join('');
+    sel.value = activePoolId;
+  }
+
+  function setActivePool(id) {
+    activePoolId = id;
+    document.getElementById("pool-select").value = id;
+    // changing the active pool resets the run to that pool
+    if (runPoolId !== id) { runPoolId = id; runStep = 0; }
+    renderPools();
+    renderRun();
+    renderGrowers();
+    fillPacketSelect();
+    renderPacket();
+  }
+
+  // ---------- SETTLEMENT RUN ----------
+  var STEPS = [
+    { t: "Ingest sales & charges",        s: "Pull settled sales lines and cost accruals from the ERP" },
+    { t: "Validate",                      s: "Check cartons, lot lineage and duplicate charge lines" },
+    { t: "Allocate charges",              s: "Spread cooling, freight and selling costs by volume" },
+    { t: "Pooling price equalization",    s: "Blend to a single pooled price per commodity" },
+    { t: "Reconcile advances",            s: "Net grower advances already paid against gross" },
+    { t: "Generate packets",              s: "Assemble one settlement packet per grower" }
+  ];
+
+  function runResult(i, p) {
+    var gr = p.growers, cartons = gr.reduce(function (s, g) { return s + g.cartons; }, 0);
+    var charges = gr.reduce(function (s, g) { return s + g.charges; }, 0);
+    var adv = gr.reduce(function (s, g) { return s + g.advances; }, 0);
+    switch (i) {
+      case 0: return (cartons.toLocaleString("en-US")) + " cartons across " + gr.length + " growers · " + m(poolGross(p)) + " gross ingested";
+      case 1: return "18 checks passed · 0 duplicate charge lines · lot lineage intact";
+      case 2: return m(charges) + " in cooling, freight & selling costs allocated by volume";
+      case 3: return "Pooled to $" + p.poolPrice.toFixed(2) + "/ctn · adjustments net to $0.00";
+      case 4: return m(adv) + " of grower advances reconciled against gross";
+      case 5: return gr.length + " packets assembled · ready to generate";
+      default: return "";
+    }
+  }
+
+  function renderRun() {
+    var p = poolById(runPoolId) || activePool();
+    document.getElementById("run-pool-label").textContent = p.name;
+
+    // stepper
+    document.getElementById("stepper").innerHTML =
+      '<div class="row wrap" style="gap:6px">' + STEPS.map(function (st, i) {
+        var done = i < runStep, cur = i === runStep;
+        var col = done ? "var(--ok)" : (cur ? "var(--accent)" : "var(--d-border-strong)");
+        var bg = done ? "var(--ok-soft)" : (cur ? "var(--accent-soft)" : "var(--d-surface-2)");
+        var tcol = done ? "var(--ok)" : (cur ? "var(--accent-deep)" : "var(--d-muted)");
+        return '<div style="flex:1;min-width:150px;border:1.5px solid ' + col + ';background:' + bg + ';border-radius:10px;padding:10px 12px">' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="width:22px;height:22px;flex:none;border-radius:50%;background:' + col + ';color:#fff;display:grid;place-items:center;font-size:.75rem;font-weight:800">' + (done ? '✓' : (i + 1)) + '</span>' +
+          '<span style="font-weight:700;font-size:.82rem;color:' + tcol + '">' + st.t + '</span></div>' +
+          '</div>';
+      }).join('') + '</div>';
+
+    // run log
+    var log = document.getElementById("run-log");
+    if (runStep === 0) {
+      log.innerHTML = '<li class="pending"><span class="node"></span><span class="tl-t">Awaiting run</span><div class="tl-s">Press “Run settlement” to ingest sales &amp; charges.</div></li>';
+    } else {
+      log.innerHTML = STEPS.slice(0, runStep).map(function (st, i) {
+        return '<li class="done"><span class="node"></span><span class="tl-t">' + st.t + '</span><div class="tl-s">' + runResult(i, p) + '</div></li>';
+      }).join('');
+    }
+
+    document.getElementById("run-progress").textContent =
+      runStep === 0 ? "Not started" : (runStep >= STEPS.length ? "Complete · " + STEPS.length + "/" + STEPS.length + " steps" : "Step " + runStep + "/" + STEPS.length);
+
+    var done = runStep >= STEPS.length;
+    var btn = document.getElementById("run-btn");
+    btn.textContent = done ? "✓ Run complete" : (runStep === 0 ? "▶ Run settlement" : "▶ Next step");
+    btn.disabled = done;
+    document.getElementById("run-reset").style.display = runStep > 0 ? "" : "none";
+    document.getElementById("gen-btn").disabled = !done;
+  }
+
+  function stepRun() {
+    if (runStep >= STEPS.length) return;
+    runStep++;
+    renderRun();
+    if (runStep >= STEPS.length) FS.toast("Settlement run complete");
+  }
+
+  // ---------- GROWERS ----------
+  function renderGrowers() {
+    var p = activePool();
+    document.getElementById("grow-pool-label").textContent = p.name;
+    document.getElementById("grower-rows").innerHTML = p.growers.map(function (g, i) {
+      var n = net(g);
+      return '<tr class="clickable" data-grower="' + i + '">' +
+        '<td><b>' + g.name + '</b></td>' +
+        '<td class="num">' + g.blocks + '</td>' +
+        '<td class="num">' + m(g.gross) + '</td>' +
+        '<td class="num">' + m(g.charges) + '</td>' +
+        '<td class="num" style="color:' + (g.adj < 0 ? 'var(--bad)' : 'var(--ok)') + '">' + (g.adj >= 0 ? '+' : '') + m(g.adj) + '</td>' +
+        '<td class="num">' + m(g.advances) + '</td>' +
+        '<td class="num"><b>' + m(n) + '</b></td></tr>';
+    }).join('');
+
+    var tot = p.growers.reduce(function (s, g) {
+      s.gross += g.gross; s.charges += g.charges; s.adj += g.adj; s.advances += g.advances; s.net += net(g); s.blocks += g.blocks;
+      return s;
+    }, { gross: 0, charges: 0, adj: 0, advances: 0, net: 0, blocks: 0 });
+    document.getElementById("grower-foot").innerHTML =
+      '<tr><td>Pool total</td><td class="num">' + tot.blocks + '</td><td class="num">' + m(tot.gross) +
+      '</td><td class="num">' + m(tot.charges) + '</td><td class="num">' + (tot.adj === 0 ? '$0' : m(tot.adj)) +
+      '</td><td class="num">' + m(tot.advances) + '</td><td class="num">' + m(tot.net) + '</td></tr>';
+  }
+
+  function growerDrawer(idx) {
+    var p = activePool(), g = p.growers[idx], n = net(g);
+    document.getElementById("gd-title").textContent = g.name;
+    var digest =
+      '<div class="grid grid-2">' +
+        '<div class="stat"><div class="label">Gross</div><div class="value">' + m(g.gross) + '</div></div>' +
+        '<div class="stat"><div class="label">Net check</div><div class="value" style="color:var(--accent-deep)">' + m(n) + '</div></div>' +
+      '</div>';
+    var revenue =
+      '<h3 style="margin:18px 0 8px;font-size:.95rem">Revenue digest</h3>' +
+      '<table class="t"><tbody>' +
+        '<tr><td>Cartons sold</td><td class="num">' + g.cartons.toLocaleString("en-US") + '</td></tr>' +
+        '<tr><td>Pooled price / carton</td><td class="num">$' + p.poolPrice.toFixed(2) + '</td></tr>' +
+        '<tr style="font-weight:700;background:var(--d-surface-2)"><td>Gross proceeds</td><td class="num">' + m(g.gross) + '</td></tr>' +
+      '</tbody></table>';
+    var chargeRows = [
+      ["Cooling & storage", Math.round(g.charges * 0.34)],
+      ["Freight to DC",     Math.round(g.charges * 0.29)],
+      ["Selling commission",Math.round(g.charges * 0.22)]
+    ];
+    var chargeSum = chargeRows.reduce(function (s, r) { return s + r[1]; }, 0);
+    chargeRows.push(["Materials & assessments", g.charges - chargeSum]);
+    var charges =
+      '<h3 style="margin:18px 0 8px;font-size:.95rem">Charge breakdown</h3>' +
+      '<table class="t"><tbody>' +
+        chargeRows.map(function (r) { return '<tr><td>' + r[0] + '</td><td class="num">' + m(r[1]) + '</td></tr>'; }).join('') +
+        '<tr style="font-weight:700;background:var(--d-surface-2)"><td>Total charges</td><td class="num">' + m(g.charges) + '</td></tr>' +
+      '</tbody></table>';
+    var adjustment =
+      '<h3 style="margin:18px 0 8px;font-size:.95rem">Pooled-price adjustment</h3>' +
+      '<p class="small muted" style="margin:0 0 8px">Equalizes this grower against the blended pool price. Adjustments across the pool net to $0.</p>' +
+      '<table class="t"><tbody>' +
+        '<tr><td>Pool equalization</td><td class="num" style="color:' + (g.adj < 0 ? 'var(--bad)' : 'var(--ok)') + '">' + (g.adj >= 0 ? '+' : '') + m(g.adj) + '</td></tr>' +
+      '</tbody></table>';
+    var advance =
+      '<h3 style="margin:18px 0 8px;font-size:.95rem">Advance recap</h3>' +
+      '<table class="t"><tbody>' +
+        '<tr><td>Advances paid to date</td><td class="num">' + m(g.advances) + '</td></tr>' +
+        '<tr><td>Reconciled against gross</td><td class="num">−' + m(g.advances) + '</td></tr>' +
+      '</tbody></table>';
+    var check =
+      '<div class="card card-pad" style="margin-top:18px;background:var(--accent-soft);border-color:var(--accent)">' +
+        '<div class="row"><span style="font-weight:700">Net check</span>' +
+        '<span class="spacer" style="font-size:1.4rem;font-weight:800;color:var(--accent-deep)">' + m(n) + '</span></div>' +
+        '<div class="small muted" style="margin-top:4px">' + m(g.gross) + ' gross − ' + m(g.charges) + ' charges ' + (g.adj >= 0 ? '+ ' : '− ') + m(Math.abs(g.adj)) + ' adj − ' + m(g.advances) + ' advances</div>' +
+      '</div>';
+    document.getElementById("gd-body").innerHTML = digest + revenue + charges + adjustment + advance + check;
+    FS.openDrawer("grower-drawer");
+  }
+
+  // ---------- PACKET ----------
+  function fillPacketSelect() {
+    var p = activePool(), sel = document.getElementById("packet-select"), keep = sel.value;
+    sel.innerHTML = p.growers.map(function (g, i) { return '<option value="' + i + '">' + g.name + '</option>'; }).join('');
+    // reset to first grower when pool changed
+    var idxs = p.growers.map(function (_, i) { return String(i); });
+    sel.value = idxs.indexOf(keep) >= 0 ? keep : "0";
+  }
+
+  function renderPacket() {
+    var p = activePool();
+    var idx = parseInt(document.getElementById("packet-select").value || "0", 10);
+    if (isNaN(idx) || idx >= p.growers.length) idx = 0;
+    var g = p.growers[idx], n = net(g);
+    var chargeRows = [
+      ["Cooling & storage", Math.round(g.charges * 0.34)],
+      ["Freight to DC",     Math.round(g.charges * 0.29)],
+      ["Selling commission",Math.round(g.charges * 0.22)]
+    ];
+    var chargeSum = chargeRows.reduce(function (s, r) { return s + r[1]; }, 0);
+    chargeRows.push(["Materials & assessments", g.charges - chargeSum]);
+
+    document.getElementById("packet-paper").innerHTML =
+      '<div class="card" style="max-width:720px;margin:0 auto;box-shadow:var(--d-shadow-md)">' +
+        '<div style="padding:28px 32px;border-bottom:3px solid var(--accent)">' +
+          '<div class="row"><div>' +
+            '<div style="font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--d-muted);font-weight:700">Grower Settlement Statement</div>' +
+            '<div style="font-size:1.5rem;font-weight:800;color:var(--d-ink);margin-top:2px">' + g.name + '</div>' +
+          '</div><div class="spacer" style="text-align:right">' +
+            '<div style="font-weight:800;color:var(--accent-deep)">Northbay Produce Co.</div>' +
+            '<div class="small muted">Statement · ' + p.season + '</div>' +
+          '</div></div>' +
+          '<div class="row wrap" style="margin-top:14px;gap:24px">' +
+            '<div><div class="small muted">Pool</div><div style="font-weight:650">' + p.name + '</div></div>' +
+            '<div><div class="small muted">Commodity</div><div style="font-weight:650">' + p.commodity + '</div></div>' +
+            '<div><div class="small muted">Region</div><div style="font-weight:650">' + p.region + '</div></div>' +
+            '<div><div class="small muted">Blocks</div><div style="font-weight:650">' + g.blocks + '</div></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div style="padding:24px 32px">' +
+          '<h3 style="margin:0 0 8px;font-size:.95rem">Revenue &amp; Expense digest</h3>' +
+          '<table class="t"><tbody>' +
+            '<tr><td>Gross proceeds</td><td class="num">' + m2(g.gross) + '</td></tr>' +
+            '<tr><td>Total charges</td><td class="num" style="color:var(--bad)">−' + m2(g.charges) + '</td></tr>' +
+            '<tr><td>Pooled-price adjustment</td><td class="num" style="color:' + (g.adj < 0 ? 'var(--bad)' : 'var(--ok)') + '">' + (g.adj >= 0 ? '+' : '−') + m2(Math.abs(g.adj)) + '</td></tr>' +
+            '<tr><td>Advances reconciled</td><td class="num" style="color:var(--bad)">−' + m2(g.advances) + '</td></tr>' +
+          '</tbody></table>' +
+
+          '<h3 style="margin:22px 0 8px;font-size:.95rem">Pooled-price detail</h3>' +
+          '<table class="t"><tbody>' +
+            '<tr><td>Cartons sold</td><td class="num">' + g.cartons.toLocaleString("en-US") + '</td></tr>' +
+            '<tr><td>Blended pool price / carton</td><td class="num">$' + p.poolPrice.toFixed(2) + '</td></tr>' +
+            '<tr style="font-weight:700;background:var(--d-surface-2)"><td>Gross proceeds</td><td class="num">' + m2(g.gross) + '</td></tr>' +
+          '</tbody></table>' +
+
+          '<h3 style="margin:22px 0 8px;font-size:.95rem">Adjustments</h3>' +
+          '<table class="t"><tbody>' +
+            chargeRows.map(function (r) { return '<tr><td>' + r[0] + '</td><td class="num">−' + m2(r[1]) + '</td></tr>'; }).join('') +
+            '<tr><td>Pool equalization</td><td class="num" style="color:' + (g.adj < 0 ? 'var(--bad)' : 'var(--ok)') + '">' + (g.adj >= 0 ? '+' : '−') + m2(Math.abs(g.adj)) + '</td></tr>' +
+          '</tbody></table>' +
+
+          '<h3 style="margin:22px 0 8px;font-size:.95rem">Payment recap</h3>' +
+          '<div class="card card-pad" style="background:var(--accent-soft);border-color:var(--accent)">' +
+            '<div class="row"><div>' +
+              '<div class="small muted">Net check to grower</div>' +
+              '<div class="small muted" style="margin-top:2px">' + m2(g.gross) + ' − ' + m2(g.charges) + ' ' + (g.adj >= 0 ? '+ ' : '− ') + m2(Math.abs(g.adj)) + ' − ' + m2(g.advances) + '</div>' +
+            '</div><div class="spacer" style="font-size:1.7rem;font-weight:800;color:var(--accent-deep)">' + m2(n) + '</div></div>' +
+          '</div>' +
+          '<p class="small muted" style="margin:16px 0 0;text-align:center">Statement generated by Northbay Produce Co. · figures are demo data</p>' +
+        '</div>' +
+      '</div>';
+  }
+
+  // ---------- WIRE UP ----------
+  document.getElementById("pool-select").addEventListener("change", function (e) { setActivePool(e.target.value); });
+  document.getElementById("packet-select").addEventListener("change", renderPacket);
+  document.getElementById("run-btn").addEventListener("click", stepRun);
+  document.getElementById("run-reset").addEventListener("click", function () { runStep = 0; renderRun(); });
+  document.getElementById("gen-btn").addEventListener("click", function () { FS.toast("12 packets generated"); });
+  document.getElementById("dl-btn").addEventListener("click", function () {
+    var g = activePool().growers[parseInt(document.getElementById("packet-select").value || "0", 10)];
+    FS.toast("Downloading packet — " + g.name);
+  });
+
+  document.addEventListener("click", function (e) {
+    var poolRow = e.target.closest("[data-pool]");
+    if (poolRow) { setActivePool(poolRow.getAttribute("data-pool")); FS.toast("Active pool set — " + activePool().name); return; }
+    var growerRow = e.target.closest("[data-grower]");
+    if (growerRow) { growerDrawer(+growerRow.getAttribute("data-grower")); }
+  });
+
+  window.resetDemo = function () {
+    state = clone(SEED);
+    activePoolId = "iceberg";
+    runPoolId = "iceberg";
+    runStep = 0;
+    fillPoolSelect();
+    renderPools();
+    renderRun();
+    renderGrowers();
+    fillPacketSelect();
+    renderPacket();
+    FS.toast("Demo reset");
+  };
+
+  function init() {
+    state = clone(SEED);
+    activePoolId = "iceberg";
+    runPoolId = "iceberg";
+    runStep = 0;
+    fillPoolSelect();
+    renderPools();
+    renderRun();
+    renderGrowers();
+    fillPacketSelect();
+    renderPacket();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

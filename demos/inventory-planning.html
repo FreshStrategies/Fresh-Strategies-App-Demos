@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daily Inventory &amp; Production Planning — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="ag">
+
+<div class="demo-banner">
+  <a href="../index.html#agriculture">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional company</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Daily Inventory &amp; Production Planning</div>
+      <div class="app-header__sub">Northbay Produce Co. · fresh-cut processing · <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● Synced with the ERP</span></div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <label class="small" style="color:rgba(255,255,255,.85)">Role</label>
+      <select id="role" class="inp" style="width:auto;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)">
+        <option value="editor">Editor</option>
+        <option value="team">Team</option>
+        <option value="exec">Exec</option>
+      </select>
+    </div>
+  </header>
+
+  <div data-tabs>
+    <div class="tabs">
+      <button class="tab active" data-panel="p-daily" data-roletab>Daily Report</button>
+      <button class="tab" data-panel="p-proj" data-roletab>Projection</button>
+      <button class="tab" data-panel="p-alerts" data-roletab>Alerts <span class="badge-num" id="alert-count">0</span></button>
+      <button class="tab" data-panel="p-targets" data-roletab>Targets</button>
+      <button class="tab" data-panel="p-exec" data-roletab>Exec</button>
+    </div>
+
+    <!-- DAILY REPORT -->
+    <section class="panel active" id="p-daily">
+      <div class="card card-pad" style="margin-bottom:16px">
+        <div class="row wrap">
+          <button class="btn btn-ghost btn-sm" id="d-prev">‹ Prev</button>
+          <div style="text-align:center;min-width:180px">
+            <div style="font-weight:700;font-size:1.02rem" id="d-date">—</div>
+            <div class="small muted" id="d-fresh">as of 6:32a · auto-pulled from the ERP</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="d-next">Next ›</button>
+          <button class="btn btn-primary btn-sm" id="d-today">Today</button>
+          <span class="spacer badge accent" id="d-roleflag">Editor · edits on</span>
+        </div>
+      </div>
+      <div id="daily-cards"></div>
+    </section>
+
+    <!-- PROJECTION -->
+    <section class="panel" id="p-proj">
+      <div class="card card-pad">
+        <div class="row"><h3 style="margin:0">5-week projection</h3><span class="spacer small muted">Projected ending &amp; days-of-supply · cells below target highlighted</span></div>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:12px">
+          <table class="t">
+            <thead><tr><th>Commodity</th><th class="num" id="pw0"></th><th class="num" id="pw1"></th><th class="num" id="pw2"></th><th class="num" id="pw3"></th><th class="num" id="pw4"></th></tr></thead>
+            <tbody id="proj-rows"></tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin-top:10px">Each cell shows projected ending lb and days-of-supply (DoS). Projection rolls harvest estimates and demand forward from today's report.</p>
+      </div>
+    </section>
+
+    <!-- ALERTS -->
+    <section class="panel" id="p-alerts">
+      <div class="card card-pad">
+        <div class="row"><h3 style="margin:0">Open alerts</h3><span class="spacer badge bad" id="alerts-total">0 open</span></div>
+        <p class="small muted" style="margin:6px 0 4px">Three checks run continuously against the daily equation. Below-target counts update live as you edit usage on the Daily Report.</p>
+        <div id="alert-list" style="margin-top:12px"></div>
+      </div>
+    </section>
+
+    <!-- TARGETS -->
+    <section class="panel" id="p-targets">
+      <div class="card card-pad">
+        <div class="row"><h3 style="margin:0">Target levels &amp; overstock ceilings</h3><span class="spacer badge" id="targets-mode">Editor · editable</span></div>
+        <p class="small muted" style="margin:6px 0 4px">Target level drives days-of-supply and below-target alerts. Overstock ceiling flags excess sitting in the cooler.</p>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:12px">
+          <table class="t">
+            <thead><tr><th>Commodity</th><th class="num">Avg daily usage</th><th class="num">Target level (lb)</th><th class="num">Overstock ceiling (lb)</th><th class="num">Current ending</th><th>Status</th></tr></thead>
+            <tbody id="target-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXEC -->
+    <section class="panel" id="p-exec">
+      <div class="grid grid-4">
+        <div class="stat"><div class="label">On target</div><div class="value" id="ex-ontarget"></div><div class="delta up">commodities</div></div>
+        <div class="stat"><div class="label">Below target</div><div class="value" id="ex-below" style="color:var(--bad)"></div><div class="delta down">need action</div></div>
+        <div class="stat"><div class="label">Open alerts</div><div class="value" id="ex-alerts"></div><div class="delta down">across all types</div></div>
+        <div class="stat"><div class="label">Total on hand</div><div class="value" id="ex-onhand"></div><div class="delta up">ending, all lots</div></div>
+      </div>
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="row"><h3 style="margin:0">Days-of-supply by commodity</h3><span class="spacer small muted">Dashed line = 1-day floor · red bars below target</span></div>
+        <div class="bars" id="ex-bars" style="margin-top:18px"></div>
+        <div class="bar-legend"><span><span class="dot ok"></span> at/above target</span><span><span class="dot bad"></span> below target</span></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Commodity drill-in drawer -->
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="comm-drawer">
+  <div class="drawer__head"><h3 style="margin:0" id="cd-title">Commodity</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body" id="cd-body"></div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  var m0 = FS.money0;
+  function lb(n){ return Math.round(n).toLocaleString("en-US") + " lb"; }
+
+  // ---------- Seed (fictional) ----------
+  // Each commodity: beginning + harvest + purchase - usage = ending.
+  // lots feed the beginning balance; target level & avg daily usage drive DoS.
+  var SEED = [
+    { key:"broc", name:"Broccoli",        avg:9200,  target:14000, ceiling:26000,
+      beg:12400, harvest:8600, purchase:0,    usage:9800,
+      lots:[["VV-2214","Verde Valley",5200,"2d"],["SR-1180","Sunridge",4100,"1d"],["BF-0907","Bluefield",3100,"3d"]] },
+    { key:"brus", name:"Brussels Sprouts",avg:4100,  target:6500,  ceiling:12000,
+      beg:5200, harvest:3400, purchase:0,     usage:4600,
+      lots:[["LP-3301","Rio Vista",2900,"1d"],["VV-2260","Verde Valley",2300,"2d"]] },
+    { key:"caul", name:"Cauliflower",     avg:7600,  target:11500, ceiling:22000,
+      beg:9800, harvest:6200, purchase:1200,  usage:7900,
+      lots:[["SR-1204","Sunridge",4600,"1d"],["BF-0921","Bluefield",3400,"2d"],["VV-2277","Verde Valley",1800,"3d"]] },
+    { key:"carr", name:"Carrots",         avg:11800, target:17000, ceiling:32000,
+      beg:16200, harvest:9400, purchase:2600,  usage:12100,
+      lots:[["LP-3318","Rio Vista",7100,"2d"],["SR-1231","Sunridge",5900,"1d"],["BF-0944","Bluefield",3200,"4d"]] },
+    { key:"rcab", name:"Red Cabbage",     avg:3400,  target:5200,  ceiling:9500,
+      beg:4100, harvest:2100, purchase:0,     usage:3800,
+      lots:[["VV-2290","Verde Valley",2400,"3d"],["LP-3327","Rio Vista",1700,"1d"]] },
+    { key:"arti", name:"Artichoke",       avg:2600,  target:4200,  ceiling:7800,
+      beg:3300, harvest:1500, purchase:600,   usage:3100,
+      lots:[["SR-1255","Sunridge",1900,"2d"],["BF-0961","Bluefield",1400,"1d"]] }
+  ];
+
+  var DATES = ["Mon Jun 29","Tue Jun 30","Wed Jul 1","Thu Jul 2","Fri Jul 3"];
+  var state, dateIdx, role;
+
+  function clone(x){ return JSON.parse(JSON.stringify(x)); }
+  function ending(c){ return c.beg + c.harvest + c.purchase - c.usage; }
+  function dos(c){ return c.avg > 0 ? ending(c) / c.avg : 0; }
+  function below(c){ return ending(c) < c.target; }
+  function belowList(){ return state.filter(below); }
+
+  var editable = true; // set by role
+
+  // ---------- Daily Report ----------
+  function renderDaily() {
+    document.getElementById("d-date").textContent = DATES[dateIdx];
+    var html = state.map(function (c, i) {
+      var end = ending(c), d = dos(c), warn = below(c);
+      var ro = editable ? "" : " disabled";
+      var lotRows = c.lots.map(function (l) {
+        return '<tr><td><b>'+l[0]+'</b></td><td>'+l[1]+'</td><td class="num">'+lb(l[2])+'</td><td class="num">'+l[3]+'</td></tr>';
+      }).join('');
+      return ''+
+      '<div class="card card-pad" style="margin-bottom:16px">'+
+        '<div class="row wrap">'+
+          '<h3 style="margin:0">'+c.name+'</h3>'+
+          (warn ? '<span class="badge bad">▼ Below target</span>' : '<span class="badge ok">On target</span>')+
+          '<span class="spacer small muted">Target '+lb(c.target)+' · avg daily usage '+lb(c.avg)+'</span>'+
+          '<button class="btn btn-ghost btn-sm" data-drill="'+i+'">Detail →</button>'+
+        '</div>'+
+        '<div class="table-wrap" style="box-shadow:none;border:none;margin-top:10px">'+
+          '<table class="t"><thead><tr><th>Lot</th><th>Grower</th><th class="num">On hand</th><th class="num">Age</th></tr></thead><tbody>'+lotRows+'</tbody></table>'+
+        '</div>'+
+        '<div class="row wrap" style="margin-top:14px;gap:8px;align-items:flex-end">'+
+          eqCell("Beginning", lb(c.beg), null)+
+          eqOp("+")+
+          eqInput("Harvest", i, "harvest", c.harvest, ro)+
+          eqOp("+")+
+          eqCell("Purchase", lb(c.purchase), null)+
+          eqOp("−")+
+          eqInput("Usage", i, "usage", c.usage, ro)+
+          eqOp("=")+
+          eqCell("Ending", '<b data-end="'+i+'">'+lb(end)+'</b>', warn ? "var(--bad)" : "var(--ok)")+
+        '</div>'+
+        '<div class="row wrap" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--d-border);gap:16px">'+
+          '<span class="small muted">Days of supply</span>'+
+          '<span class="badge '+(warn?"bad":(d>3.5?"accent":"ok"))+'" data-dos="'+i+'">'+d.toFixed(1)+' days</span>'+
+          '<span class="small muted spacer">Ending ÷ avg daily usage · '+lb(c.avg)+'/day</span>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+    document.getElementById("daily-cards").innerHTML = html;
+  }
+  function eqCell(label, val, color){
+    return '<div style="min-width:96px"><div class="small muted">'+label+'</div>'+
+      '<div style="font-weight:700;font-size:1.02rem'+(color?';color:'+color:'')+'">'+val+'</div></div>';
+  }
+  function eqOp(op){ return '<div style="font-weight:800;font-size:1.2rem;color:var(--d-muted);padding-bottom:4px">'+op+'</div>'; }
+  function eqInput(label, i, field, val, ro){
+    return '<div style="min-width:104px"><div class="small muted">'+label+'</div>'+
+      '<input class="inp" style="padding:.4rem .5rem;font-weight:700" type="number" min="0" step="100" '+
+      'data-edit="'+i+'" data-field="'+field+'" value="'+val+'"'+ro+' /></div>';
+  }
+
+  // live recompute on a single card without full re-render
+  function recomputeCard(i){
+    var c = state[i], end = ending(c), d = dos(c), warn = below(c);
+    var endEl = document.querySelector('[data-end="'+i+'"]');
+    if (endEl){ endEl.textContent = lb(end); endEl.parentElement.style.color = warn ? "var(--bad)" : "var(--ok)"; }
+    var dosEl = document.querySelector('[data-dos="'+i+'"]');
+    if (dosEl){ dosEl.textContent = d.toFixed(1)+" days"; dosEl.className = "badge "+(warn?"bad":(d>3.5?"accent":"ok")); }
+    // header badge
+    var card = dosEl ? dosEl.closest(".card") : null;
+    if (card){
+      var hb = card.querySelector(".row .badge.ok, .row .badge.bad");
+      if (hb){ hb.className = "badge "+(warn?"bad":"ok"); hb.textContent = warn ? "▼ Below target" : "On target"; }
+    }
+  }
+
+  // ---------- Projection ----------
+  function renderProjection(){
+    // weekly demand & harvest drift, projected forward from today
+    var labels = ["Wk 1","Wk 2","Wk 3","Wk 4","Wk 5"];
+    for (var w=0; w<5; w++) document.getElementById("pw"+w).textContent = labels[w];
+    document.getElementById("proj-rows").innerHTML = state.map(function (c) {
+      var run = ending(c);
+      var cells = "";
+      for (var w=0; w<5; w++){
+        // harvest tapers, demand roughly steady w/ slight seasonal rise
+        var wkHarvest = c.harvest * 5 * (1 - w*0.09);
+        var wkDemand  = c.avg * 5 * (1 + w*0.05);
+        run = Math.max(0, run + wkHarvest - wkDemand);
+        var d = c.avg>0 ? run/c.avg : 0;
+        var low = run < c.target;
+        cells += '<td class="num"'+(low?' style="background:var(--bad-soft)"':'')+'>'+
+          '<div style="font-weight:600">'+lb(run)+'</div>'+
+          '<div class="small" style="color:'+(low?'var(--bad)':'var(--d-muted)')+'">'+d.toFixed(1)+' DoS</div></td>';
+      }
+      return '<tr><td><b>'+c.name+'</b></td>'+cells+'</tr>';
+    }).join('');
+  }
+
+  // ---------- Alerts ----------
+  function buildAlerts(){
+    var alerts = [];
+    belowList().forEach(function (c){
+      var d = dos(c);
+      alerts.push({ sev:"bad", type:"Below target",
+        title:c.name+" below target level",
+        drill:"Ending "+lb(ending(c))+" vs target "+lb(c.target)+" · "+d.toFixed(1)+" days of supply · pull harvest forward or add a purchase" });
+    });
+    // static (non below-target) alerts to show the other two types
+    alerts.push({ sev:"warn", type:"Unpaired estimate/demand",
+      title:"Cauliflower harvest estimate has no matching demand line",
+      drill:"Sunridge estimate SR-1204 (6,200 lb) not yet paired to a customer order · confirm with Dana before the 10a cut" });
+    alerts.push({ sev:"warn", type:"Unreconciled transfer",
+      title:"Carrots transfer to Midwest DC not reconciled",
+      drill:"3,200 lb left Northwest DC on Coastway Freight but ending count still reflects it · reconcile against the transfer manifest" });
+
+    document.getElementById("alert-list").innerHTML = alerts.map(function (a){
+      return ''+
+      '<div class="card" style="padding:14px 16px;margin-bottom:10px;border-left:4px solid var(--'+(a.sev==="bad"?"bad":"warn")+')">'+
+        '<div class="row wrap">'+
+          '<span class="badge '+a.sev+'">'+(a.sev==="bad"?"High":"Watch")+'</span>'+
+          '<span class="badge muted">'+a.type+'</span>'+
+          '<b class="spacer" style="text-align:right;flex:1;min-width:200px">'+a.title+'</b>'+
+        '</div>'+
+        '<div class="small muted" style="margin-top:8px">↳ '+a.drill+'</div>'+
+      '</div>';
+    }).join('');
+
+    var n = alerts.length;
+    document.getElementById("alert-count").textContent = n;
+    document.getElementById("alerts-total").textContent = n + " open";
+    document.getElementById("ex-alerts").textContent = n;
+  }
+
+  // ---------- Targets ----------
+  function renderTargets(){
+    var ro = editable ? "" : " disabled";
+    document.getElementById("targets-mode").textContent = editable ? "Editor · editable" : (role==="exec"?"Exec · read-only":"Team · read-only");
+    document.getElementById("targets-mode").className = "spacer badge " + (editable ? "accent" : "muted");
+    document.getElementById("target-rows").innerHTML = state.map(function (c, i){
+      var end = ending(c), warn = below(c), over = end > c.ceiling;
+      var status = warn ? '<span class="badge bad">Below target</span>' : (over ? '<span class="badge warn">Over ceiling</span>' : '<span class="badge ok">In range</span>');
+      return '<tr'+(warn?' class="is-bad"':'')+'><td><b>'+c.name+'</b></td>'+
+        '<td class="num">'+lb(c.avg)+'</td>'+
+        '<td class="num"><input class="inp" style="padding:.35rem .5rem;text-align:right;max-width:120px" type="number" min="0" step="500" data-tgt="'+i+'" data-tfield="target" value="'+c.target+'"'+ro+' /></td>'+
+        '<td class="num"><input class="inp" style="padding:.35rem .5rem;text-align:right;max-width:120px" type="number" min="0" step="500" data-tgt="'+i+'" data-tfield="ceiling" value="'+c.ceiling+'"'+ro+' /></td>'+
+        '<td class="num">'+lb(end)+'</td>'+
+        '<td>'+status+'</td></tr>';
+    }).join('');
+  }
+
+  // ---------- Exec ----------
+  function renderExec(){
+    var below = belowList().length, on = state.length - below;
+    var onhand = state.reduce(function(s,c){ return s + ending(c); }, 0);
+    document.getElementById("ex-ontarget").textContent = on;
+    document.getElementById("ex-below").textContent = below;
+    document.getElementById("ex-onhand").textContent = lb(onhand);
+    var maxD = Math.max.apply(null, state.map(dos).concat([4]));
+    document.getElementById("ex-bars").innerHTML = state.map(function (c){
+      var d = dos(c), warn = below0(c);
+      var h = Math.max(6, d/maxD*100);
+      return '<div class="bar'+(warn?"":" alt")+'" style="height:'+h+'%;background:'+(warn?"var(--bad)":"var(--accent)")+
+        '"><span>'+c.name.split(" ")[0]+'<br>'+d.toFixed(1)+'d</span></div>';
+    }).join('');
+  }
+  function below0(c){ return ending(c) < c.target; }
+
+  // ---------- Roles ----------
+  function applyRole(){
+    editable = (role === "editor");
+    document.getElementById("d-roleflag").textContent = editable ? "Editor · edits on" : (role==="exec"?"Exec · read-only":"Team · read-only");
+    document.getElementById("d-roleflag").className = "spacer badge " + (editable ? "accent" : "muted");
+    // emphasize role-relevant tabs
+    var emphasis = { editor:["p-daily","p-targets"], team:["p-alerts","p-proj"], exec:["p-exec"] };
+    document.querySelectorAll("[data-roletab]").forEach(function (t){
+      var on = emphasis[role].indexOf(t.getAttribute("data-panel")) >= 0;
+      t.style.fontWeight = on ? "800" : "";
+      t.style.opacity = "1";
+    });
+  }
+
+  // ---------- Full render ----------
+  function renderAll(){
+    applyRole();
+    renderDaily();
+    renderProjection();
+    buildAlerts();
+    renderTargets();
+    renderExec();
+  }
+
+  // ---------- Events ----------
+  document.addEventListener("input", function (e){
+    var edit = e.target.closest("[data-edit]");
+    if (edit){
+      if (!editable) return;
+      var i = +edit.getAttribute("data-edit"), f = edit.getAttribute("data-field");
+      var v = Math.max(0, parseInt(edit.value || "0", 10));
+      state[i][f] = v;
+      recomputeCard(i);
+      buildAlerts();  // below-target count updates live
+      renderExec();
+      return;
+    }
+    var tgt = e.target.closest("[data-tgt]");
+    if (tgt){
+      if (!editable) return;
+      var ti = +tgt.getAttribute("data-tgt"), tf = tgt.getAttribute("data-tfield");
+      state[ti][tf] = Math.max(0, parseInt(tgt.value || "0", 10));
+      renderDaily(); buildAlerts(); renderTargets(); renderExec(); renderProjection();
+    }
+  });
+
+  document.addEventListener("click", function (e){
+    var drill = e.target.closest("[data-drill]");
+    if (drill){
+      var c = state[+drill.getAttribute("data-drill")], end = ending(c), d = dos(c), warn = below0(c);
+      document.getElementById("cd-title").textContent = c.name;
+      var lotRows = c.lots.map(function (l){
+        return '<tr><td><b>'+l[0]+'</b></td><td>'+l[1]+'</td><td class="num">'+lb(l[2])+'</td><td class="num">'+l[3]+'</td></tr>';
+      }).join('');
+      document.getElementById("cd-body").innerHTML =
+        '<div class="grid grid-2">'+
+          '<div class="stat"><div class="label">Ending</div><div class="value" style="color:'+(warn?"var(--bad)":"inherit")+'">'+lb(end)+'</div></div>'+
+          '<div class="stat"><div class="label">Days of supply</div><div class="value">'+d.toFixed(1)+'</div></div>'+
+        '</div>'+
+        '<p class="small muted" style="margin-top:14px">The daily equation <b>Beginning + Harvest + Purchase − Usage = Ending</b> reconciles every lot in the cooler against what the lines actually ran. Days-of-supply is Ending ÷ '+lb(c.avg)+' avg daily usage.</p>'+
+        '<div class="table-wrap" style="box-shadow:none;border:none;margin-top:6px">'+
+          '<table class="t"><thead><tr><th>Lot</th><th>Grower</th><th class="num">On hand</th><th class="num">Age</th></tr></thead><tbody>'+lotRows+'</tbody></table>'+
+        '</div>'+
+        '<div class="bars" style="margin-top:22px">'+[3.1,2.8,3.4,d,3.0].map(function(v,ix){
+          var h=Math.max(8,v/4.5*100);
+          return '<div class="bar'+(ix===3?"":" alt")+'" style="height:'+h+'%"><span>'+["-3d","-2d","-1d","Today","Proj"][ix]+'</span></div>';
+        }).join('')+'</div>';
+      FS.openDrawer("comm-drawer");
+    }
+  });
+
+  function setDate(i){ dateIdx = (i+DATES.length)%DATES.length; document.getElementById("d-date").textContent = DATES[dateIdx]; }
+  document.getElementById("d-prev").addEventListener("click", function(){ setDate(dateIdx-1); });
+  document.getElementById("d-next").addEventListener("click", function(){ setDate(dateIdx+1); });
+  document.getElementById("d-today").addEventListener("click", function(){ setDate(3); FS.toast("Jumped to today"); });
+  document.getElementById("role").addEventListener("change", function(e){ role = e.target.value; renderAll(); FS.toast("Role: "+e.target.options[e.target.selectedIndex].text); });
+
+  window.resetDemo = function(){
+    state = clone(SEED); dateIdx = 3; role = "editor";
+    document.getElementById("role").value = "editor";
+    renderAll(); FS.toast("Demo reset");
+  };
+
+  // init
+  state = clone(SEED); dateIdx = 3; role = "editor";
+  renderAll();
+})();
+</script>
+</body>
+</html>

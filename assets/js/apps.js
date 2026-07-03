@@ -76,6 +76,44 @@ window.FS_APPS = [
     tags: [".NET / Razor", "QBO OAuth", "AI analysis", "Role‑scoped", "MFA"]
   },
 
+  {
+    sector: "ag", slug: "inventory-planning", title: "Daily Inventory & Production Planning",
+    icon: "boxes",
+    need: "A processing plant rebuilt its beginning‑inventory report by hand in Excel every morning — slow, siloed to one person, with no forward view of when a commodity would run short.",
+    solve: "A shared daily tool tracks each commodity through the same equation the plant already trusts — beginning + harvest + purchases − usage = ending — then projects days‑of‑supply and raises alerts before anything runs low. Editors, the wider team, and execs each get the right view.",
+    tags: ["React", "Daily equation", "Days‑of‑supply", "Alerts", "Roles"]
+  },
+  {
+    sector: "ag", slug: "traceability", title: "Traceability Sync & Compliance",
+    icon: "trace",
+    need: "Product and lot data lived in one system, but the labeling and traceability platform needed a current copy every morning — and looming food‑safety label rules meant thousands of records had to be updated correctly and on deadline.",
+    solve: "A daily sync proposes every change and lets a person approve it before it's pushed, so the two systems never drift. A separate dual‑approval workflow handles the big regulatory label cutover — dry‑run, review, then execute — with a full audit trail.",
+    tags: [".NET / Razor", "Human‑approved sync", "Dual approval", "Audit trail"]
+  },
+  {
+    sector: "ag", slug: "production-review", title: "Weekly Production Review (S&OP)",
+    icon: "chart",
+    need: "The weekly sales‑and‑operations review ran off a slide deck someone rebuilt by hand, so the numbers were stale before the meeting even started.",
+    solve: "A live review app shows each commodity's planting, harvest estimate, actual receipts, and demand across a rolling five‑week window, straight from the source data. Presenters get clean slides and charts; admins add the week's notes in place — no more rebuilding a deck.",
+    tags: [".NET / Razor", "Live S&OP", "5‑week view", "Charts", "Notes"]
+  },
+
+  // ---------------- Finance & Distribution (additions) ----------------
+  {
+    sector: "fin", slug: "grower-settlement", title: "Grower Pooling & Settlement",
+    icon: "coins",
+    need: "A grower‑shipper had to split each season's proceeds fairly across many growers — accounting for market‑passed units, varied charges, and ownership splits — all in a fragile spreadsheet only one person understood.",
+    solve: "A settlement engine ingests the season's sales and charges, runs the pooling math (allocation by actual product mix, price equalization, charge reallocation, ownership splits), reconciles advances, and produces a branded, auditable settlement packet for each grower — validated to the dollar.",
+    tags: [".NET / Razor", "Pooling math", "Ownership splits", "PDF packets", "Audited"]
+  },
+  {
+    sector: "fin", slug: "finance-utilities", title: "Finance Data Workbench",
+    icon: "database",
+    need: "The finance team reloaded recurring workbooks — labor rates, budgets, sales demand — into the database by hand, and a single renamed column could quietly break everything.",
+    solve: "Staff upload each standard workbook and the app validates it against an exact expected layout, previews every table with pass/fail counts, and loads it in one all‑or‑nothing step. Budgets get versioned and compared against demand, so nothing silently drifts.",
+    tags: [".NET / Razor", "Workbook validation", "All‑or‑nothing load", "Budget compare"]
+  },
+
   // ---------------- Real Estate & Rentals ----------------
   {
     sector: "rental", slug: "rental-management", title: "Vacation Rental Manager",
@@ -83,6 +121,45 @@ window.FS_APPS = [
     need: "An owner running several short‑term rental properties juggled bookings, cleaning turnovers, and payouts across a calendar, a spreadsheet, and text messages — and still double‑booked and missed cleanings.",
     solve: "One dashboard for the whole portfolio: reservations with a clear status flow (pending → confirmed → checked‑in → checked‑out), a turnover board that moves each unit from checkout to clean to guest‑ready, and occupancy, nightly‑rate, and payout numbers per property at a glance.",
     tags: ["React", "Bookings", "Turnover board", "Occupancy & revenue"]
+  },
+
+  // ---------------- Logistics & Supply Chain ----------------
+  {
+    sector: "logistics", slug: "truck-checkin", title: "Truck Check‑In & Dock Scheduling",
+    icon: "truck",
+    need: "Drivers arriving at the warehouse had no way to announce themselves; staff matched trucks to orders by phone and radio, and dock assignments got lost in the shuffle.",
+    solve: "A driver scans a QR code and enters their pickup number; the app matches it to the order, assigns a dock door, and texts the driver where to go. Two‑way SMS and a live ops board keep every arrival, delay, and assignment in one auditable place.",
+    tags: ["Blazor / .NET", "QR self‑check‑in", "Two‑way SMS", "Dock scheduling"]
+  },
+  {
+    sector: "logistics", slug: "vmi", title: "Vendor‑Managed Inventory",
+    icon: "sync",
+    need: "Account managers kept a customer's stock levels in enormous spreadsheets — dozens of distribution centers, hundreds of columns — doing reorder math by hand with no forward view of stock‑outs.",
+    solve: "The app projects each location's demand from shipment history, then recommends how much to send and when to keep every site above safety stock. Managers define a customer once by picking its locations; the system watches cover levels and flags reorders before shelves go empty.",
+    tags: ["Blazor / .NET", "Demand forecast", "Replenishment", "Multi‑location"]
+  },
+  {
+    sector: "logistics", slug: "packaging", title: "Packaging Procurement & EPR",
+    icon: "box",
+    need: "Packaging — cartons, totes, cases — was ordered on gut feel from shipment volume, risking both stock‑outs and costly excess, with no clean record for new Extended Producer Responsibility (EPR) reporting.",
+    solve: "Velocity‑based forecasting turns shipping history into a weekly burn rate, compares it against on‑hand and inbound orders, and suggests what to buy by lead‑time class. Material usage is tracked in a way that also feeds EPR fee and recycled‑content reporting.",
+    tags: [".NET / Razor", "Velocity forecast", "Reorder suggestions", "EPR reporting"]
+  },
+
+  // ---------------- AI & Automation ----------------
+  {
+    sector: "ai", slug: "ai-extraction", title: "AI Document Extraction",
+    icon: "doc",
+    need: "A team received critical numbers every week as long PDF reports — dozens of pages of pricing and volume — and someone re‑keyed them by hand into spreadsheets before anyone could analyze them.",
+    solve: "AI reads each report and extracts the figures into a structured database, showing a person every row to approve before it's saved. A clean, queryable history builds up automatically — ready for dashboards and deeper analytics instead of copy‑paste.",
+    tags: [".NET / Razor", "Claude API", "PDF → database", "Human‑in‑the‑loop", "Analytics‑ready"]
+  },
+  {
+    sector: "ai", slug: "ai-assistant", title: "AI Business‑Data Assistant",
+    icon: "chat",
+    need: "Leaders had rich operational data in their systems but still waited on analysts to answer everyday questions — what's low, what's trending, what needs attention today.",
+    solve: "A chat assistant answers plain‑language questions using the business's own live data, not guesses. It's grounded through a secure, read‑only data layer (MCP) you feed with real context — products, customers, targets — so the answers get sharper the more of your world it knows.",
+    tags: ["Claude + MCP", "Chat over your data", "Secure & read‑only", "Add business context"]
   }
 ];
 

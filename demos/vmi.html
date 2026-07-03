@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vendor-Managed Inventory — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="logistics">
+
+<div class="demo-banner">
+  <a href="../index.html#logistics">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional company</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4"/><path d="M12 11v10"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Vendor-Managed Inventory</div>
+      <div class="app-header__sub">Northbay Produce Co. · <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● Harborline Markets VMI · 6 DCs</span></div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <span class="avatar">DM</span>
+    </div>
+  </header>
+
+  <div data-tabs>
+    <div class="tabs">
+      <button class="tab active" data-panel="p-repl">Replenishment</button>
+      <button class="tab" data-panel="p-fore">Forecast</button>
+      <button class="tab" data-panel="p-loc">Locations</button>
+      <button class="tab" data-panel="p-jobs">Jobs</button>
+    </div>
+
+    <!-- REPLENISHMENT -->
+    <section class="panel active" id="p-repl">
+      <div class="grid grid-4">
+        <div class="stat"><div class="label">Active job</div><div class="value" style="font-size:1.15rem;line-height:1.3">Harborline Markets VMI</div><div class="delta up">6 DCs · 9 SKUs</div></div>
+        <div class="stat"><div class="label">Lines flagged</div><div class="value" id="k-flag" style="color:var(--bad)"></div><div class="delta down">below reorder point</div></div>
+        <div class="stat"><div class="label">Suggested cases</div><div class="value" id="k-cases"></div><div class="delta up">across flagged lines</div></div>
+        <div class="stat"><div class="label">Avg cover</div><div class="value" id="k-cover"></div><div class="delta up">days on hand</div></div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="row wrap">
+          <h3 style="margin:0">Replenishment worksheet</h3>
+          <span class="badge accent">Harborline Markets VMI · 6 DCs</span>
+          <span class="small muted">Edit <b>On hand</b> to recompute cover, reorder flag &amp; suggested qty live</span>
+          <button class="btn btn-primary btn-sm spacer" id="build-order">＋ Build order</button>
+        </div>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:12px">
+          <table class="t">
+            <thead><tr>
+              <th>Location</th><th>Product</th>
+              <th class="num">On hand</th><th class="num">Inbound</th>
+              <th class="num">Daily demand</th><th class="num">Cover</th>
+              <th>Reorder?</th><th class="num">Suggested</th>
+            </tr></thead>
+            <tbody id="repl-rows"></tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin:10px 2px 0">
+          Cover (days) = (on hand + inbound) ÷ daily demand. A line is flagged when cover falls below
+          <b>lead time + safety stock</b> — both editable per location on the Locations tab. Suggested qty rounds up to the case pack.
+        </p>
+      </div>
+    </section>
+
+    <!-- FORECAST -->
+    <section class="panel" id="p-fore">
+      <div class="card card-pad">
+        <div class="row wrap">
+          <h3 style="margin:0">7-day demand forecast</h3>
+          <div class="switcher" style="margin-left:auto">
+            <label class="small muted">Location</label>
+            <select id="fore-loc" class="inp" style="width:auto"></select>
+          </div>
+        </div>
+        <p class="small muted" style="margin:6px 0 0">
+          13-week baseline × recent trend, by weekday. Weekends run lighter; the platform reforecasts nightly from Harborline POS pulls.
+        </p>
+        <div class="bars" id="fore-bars" style="margin-top:34px"></div>
+      </div>
+
+      <div class="grid grid-3" style="margin-top:16px">
+        <div class="stat"><div class="label">Fill rate (30d)</div><div class="value" id="f-fill"></div><div class="delta up">▲ 1.4 pts vs prior</div></div>
+        <div class="stat"><div class="label">Avg cover</div><div class="value" id="f-cover"></div><div class="delta up">days on hand</div></div>
+        <div class="stat"><div class="label">Locations at risk</div><div class="value" id="f-risk" style="color:var(--bad)"></div><div class="delta down">cover below reorder point</div></div>
+      </div>
+    </section>
+
+    <!-- LOCATIONS -->
+    <section class="panel" id="p-loc">
+      <div class="card card-pad">
+        <div class="row wrap">
+          <h3 style="margin:0">Location settings</h3>
+          <span class="small muted spacer">Changing lead time or safety stock re-flags the Replenishment worksheet</span>
+        </div>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:12px">
+          <table class="t">
+            <thead><tr>
+              <th>Location</th><th>Region</th>
+              <th class="num">Lead time (days)</th><th class="num">Safety stock (days)</th>
+              <th class="num">Reorder point</th><th class="num">Case pack</th>
+            </tr></thead>
+            <tbody id="loc-rows"></tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin:10px 2px 0">
+          Reorder point = lead time + safety stock (days of cover). Carriers on file: Coastway Freight, Valley Transport, Ridgeline Carriers.
+        </p>
+      </div>
+    </section>
+
+    <!-- JOBS -->
+    <section class="panel" id="p-jobs">
+      <div class="card card-pad">
+        <div class="row wrap">
+          <h3 style="margin:0">VMI jobs</h3>
+          <button class="btn btn-primary btn-sm spacer" data-drawer-open="job-drawer">＋ New job</button>
+        </div>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:12px">
+          <table class="t">
+            <thead><tr><th>Customer</th><th class="num">Locations</th><th>Owner</th><th>Status</th></tr></thead>
+            <tbody id="job-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- New job drawer -->
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="job-drawer">
+  <div class="drawer__head"><h3 style="margin:0">New VMI job</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body">
+    <div class="field">
+      <label class="lbl">Job name</label>
+      <input class="inp" id="job-name" placeholder="e.g. Harborline Markets — West VMI" />
+    </div>
+    <div class="field">
+      <label class="lbl">Customer</label>
+      <select class="inp" id="job-cust">
+        <option>Harborline Markets</option>
+        <option>Harborline Markets — West</option>
+        <option>Harborline Markets — Foodservice</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="lbl">Owner</label>
+      <select class="inp" id="job-owner">
+        <option>Dana</option><option>Alex</option><option>Sam</option><option>Jordan</option><option>Maria</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="lbl">Distribution centers</label>
+      <div id="job-locs" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
+      <p class="help">Select the DCs this job replenishes. Each pulls its own lead time, safety stock and case pack.</p>
+    </div>
+    <button class="btn btn-primary" id="job-create" style="width:100%;justify-content:center">Create job</button>
+  </div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  // ---------- Seed data (fictional) ----------
+  var SEED_LOCS = [
+    { id: "nw", name: "Northwest DC",  region: "Pacific NW",  lead: 2, safety: 2, pack: 24 },
+    { id: "mw", name: "Midwest DC",    region: "Great Lakes", lead: 3, safety: 2, pack: 24 },
+    { id: "se", name: "Southeast DC",  region: "Gulf Coast",  lead: 4, safety: 3, pack: 30 },
+    { id: "sw", name: "Southwest DC",  region: "Desert SW",   lead: 3, safety: 2, pack: 24 },
+    { id: "ne", name: "Northeast DC",  region: "New England", lead: 2, safety: 2, pack: 30 },
+    { id: "mt", name: "Mountain DC",   region: "Rockies",     lead: 4, safety: 3, pack: 24 }
+  ];
+  // 1–2 products per location; numbers tuned so a few flag for reorder
+  var SEED_LINES = [
+    { loc: "nw", prod: "Romaine 24ct",          onhand: 96,  inbound: 24, demand: 22 },
+    { loc: "nw", prod: "Broccoli 18ct",         onhand: 40,  inbound: 0,  demand: 18 },
+    { loc: "mw", prod: "Iceberg 24ct",          onhand: 70,  inbound: 30, demand: 26 },
+    { loc: "mw", prod: "Cauliflower 12ct",      onhand: 34,  inbound: 0,  demand: 15 },
+    { loc: "se", prod: "Romaine 24ct",          onhand: 120, inbound: 0,  demand: 21 },
+    { loc: "se", prod: "Brussels Sprouts 12ct", onhand: 44,  inbound: 20, demand: 20 },
+    { loc: "sw", prod: "Celery 30ct",           onhand: 58,  inbound: 0,  demand: 16 },
+    { loc: "ne", prod: "Carrots 48ct",          onhand: 150, inbound: 60, demand: 28 },
+    { loc: "mt", prod: "Artichoke 18ct",        onhand: 30,  inbound: 0,  demand: 14 }
+  ];
+  var SEED_JOBS = [
+    { cust: "Harborline Markets",              locs: 6, owner: "Dana",   status: "Active" },
+    { cust: "Harborline Markets — West",       locs: 3, owner: "Alex",   status: "Active" },
+    { cust: "Harborline Markets — Foodservice", locs: 2, owner: "Sam",    status: "Onboarding" }
+  ];
+
+  var LOCS, LINES, JOBS;
+  var esc = FS.esc;
+
+  function cloneSeed() {
+    LOCS  = SEED_LOCS.map(function (l) { return Object.assign({}, l); });
+    LINES = SEED_LINES.map(function (l) { return Object.assign({}, l); });
+    JOBS  = SEED_JOBS.map(function (j) { return Object.assign({}, j); });
+  }
+
+  function locById(id) { for (var i = 0; i < LOCS.length; i++) if (LOCS[i].id === id) return LOCS[i]; return null; }
+  function reorderPoint(loc) { return loc.lead + loc.safety; }              // days of cover
+  function cover(line) { return (line.onhand + line.inbound) / line.demand; } // days
+  function isFlagged(line) { var l = locById(line.loc); return cover(line) < reorderPoint(l); }
+
+  // Suggested qty: bring cover up to reorder point + 5 days buffer, round up to case pack
+  function suggested(line) {
+    if (!isFlagged(line)) return 0;
+    var l = locById(line.loc);
+    var targetDays = reorderPoint(l) + 5;
+    var targetUnits = targetDays * line.demand;
+    var need = targetUnits - (line.onhand + line.inbound);
+    if (need <= 0) return 0;
+    return Math.ceil(need / l.pack) * l.pack;
+  }
+
+  // ---------- Replenishment ----------
+  function renderRepl() {
+    var body = document.getElementById("repl-rows");
+    body.innerHTML = LINES.map(function (line, i) {
+      var l = locById(line.loc);
+      var cov = cover(line);
+      var flag = isFlagged(line);
+      var sug = suggested(line);
+      return '<tr' + (flag ? ' class="is-bad"' : '') + '>' +
+        '<td><b>' + esc(l.name) + '</b></td>' +
+        '<td>' + esc(line.prod) + '</td>' +
+        '<td class="num"><input class="inp" data-onhand="' + i + '" type="number" min="0" value="' + line.onhand +
+          '" style="width:78px;padding:.3rem .45rem;text-align:right" /></td>' +
+        '<td class="num">' + line.inbound + '</td>' +
+        '<td class="num">' + line.demand + '</td>' +
+        '<td class="num"><b>' + cov.toFixed(1) + '</b> <span class="small muted">d</span></td>' +
+        '<td>' + (flag
+            ? '<span class="badge bad">● Reorder</span>'
+            : '<span class="badge ok">● OK</span>') + '</td>' +
+        '<td class="num">' + (sug ? '<b>' + sug + '</b> <span class="small muted">cs</span>' : '—') + '</td>' +
+      '</tr>';
+    }).join('');
+    renderReplKPIs();
+  }
+
+  function renderReplKPIs() {
+    var flagged = LINES.filter(isFlagged);
+    var cases = flagged.reduce(function (s, l) { return s + suggested(l); }, 0);
+    var avgCover = LINES.reduce(function (s, l) { return s + cover(l); }, 0) / LINES.length;
+    document.getElementById("k-flag").textContent = flagged.length;
+    document.getElementById("k-cases").textContent = cases.toLocaleString("en-US");
+    document.getElementById("k-cover").textContent = avgCover.toFixed(1) + "d";
+  }
+
+  document.getElementById("repl-rows").addEventListener("input", function (e) {
+    var inp = e.target.closest("[data-onhand]");
+    if (!inp) return;
+    var i = +inp.getAttribute("data-onhand");
+    var v = parseInt(inp.value, 10);
+    LINES[i].onhand = isNaN(v) || v < 0 ? 0 : v;
+    // recompute just this row for a live feel, then refresh KPIs
+    var tr = inp.closest("tr");
+    var line = LINES[i], cov = cover(line), flag = isFlagged(line), sug = suggested(line);
+    tr.classList.toggle("is-bad", flag);
+    var cells = tr.children;
+    cells[5].innerHTML = '<b>' + cov.toFixed(1) + '</b> <span class="small muted">d</span>';
+    cells[6].innerHTML = flag ? '<span class="badge bad">● Reorder</span>' : '<span class="badge ok">● OK</span>';
+    cells[7].innerHTML = sug ? '<b>' + sug + '</b> <span class="small muted">cs</span>' : '—';
+    renderReplKPIs();
+  });
+
+  document.getElementById("build-order").addEventListener("click", function () {
+    var flaggedLocs = {};
+    LINES.forEach(function (l) { if (isFlagged(l)) flaggedLocs[l.loc] = true; });
+    var n = Object.keys(flaggedLocs).length;
+    if (!n) { FS.toast("Nothing to reorder — all lines above reorder point"); return; }
+    FS.toast("Draft PO created for " + n + " location" + (n === 1 ? "" : "s"));
+  });
+
+  // ---------- Forecast ----------
+  var DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  // weekday multipliers on top of a location's base daily demand
+  var WEEKDAY = [1.05, 1.0, 1.08, 1.12, 1.15, 0.72, 0.55];
+
+  function foreLocOptions() {
+    document.getElementById("fore-loc").innerHTML = LOCS.map(function (l) {
+      return '<option value="' + l.id + '">' + esc(l.name) + '</option>';
+    }).join('');
+  }
+
+  function baseDemandFor(locId) {
+    var lines = LINES.filter(function (l) { return l.loc === locId; });
+    return lines.reduce(function (s, l) { return s + l.demand; }, 0) || 20;
+  }
+
+  function renderForecast() {
+    var locId = document.getElementById("fore-loc").value;
+    var base = baseDemandFor(locId);
+    var vals = WEEKDAY.map(function (m) { return Math.round(base * m); });
+    var max = Math.max.apply(null, vals);
+    document.getElementById("fore-bars").innerHTML = vals.map(function (v, i) {
+      return '<div class="bar" style="height:' + (v / max * 100) + '%" title="' + v + ' cases">' +
+             '<span>' + DAYS[i] + '</span></div>';
+    }).join('');
+  }
+
+  function renderForeKPIs() {
+    var atRisk = {};
+    LINES.forEach(function (l) { if (isFlagged(l)) atRisk[l.loc] = true; });
+    var avgCover = LINES.reduce(function (s, l) { return s + cover(l); }, 0) / LINES.length;
+    document.getElementById("f-fill").textContent = "97.6%";
+    document.getElementById("f-cover").textContent = avgCover.toFixed(1) + "d";
+    document.getElementById("f-risk").textContent = Object.keys(atRisk).length;
+  }
+
+  document.getElementById("fore-loc").addEventListener("change", renderForecast);
+
+  // ---------- Locations ----------
+  function renderLocs() {
+    document.getElementById("loc-rows").innerHTML = LOCS.map(function (l, i) {
+      return '<tr>' +
+        '<td><b>' + esc(l.name) + '</b></td>' +
+        '<td class="muted">' + esc(l.region) + '</td>' +
+        '<td class="num"><input class="inp" data-lead="' + i + '" type="number" min="0" value="' + l.lead +
+          '" style="width:66px;padding:.3rem .45rem;text-align:right" /></td>' +
+        '<td class="num"><input class="inp" data-safety="' + i + '" type="number" min="0" value="' + l.safety +
+          '" style="width:66px;padding:.3rem .45rem;text-align:right" /></td>' +
+        '<td class="num"><b>' + reorderPoint(l) + '</b> <span class="small muted">d</span></td>' +
+        '<td class="num">' + l.pack + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  document.getElementById("loc-rows").addEventListener("input", function (e) {
+    var lead = e.target.closest("[data-lead]");
+    var safety = e.target.closest("[data-safety]");
+    if (lead) {
+      var i = +lead.getAttribute("data-lead");
+      var v = parseInt(lead.value, 10);
+      LOCS[i].lead = isNaN(v) || v < 0 ? 0 : v;
+    } else if (safety) {
+      var j = +safety.getAttribute("data-safety");
+      var w = parseInt(safety.value, 10);
+      LOCS[j].safety = isNaN(w) || w < 0 ? 0 : w;
+    } else { return; }
+    // update the reorder-point cell in this row, then re-flag downstream views
+    var tr = e.target.closest("tr");
+    var idx = lead ? +lead.getAttribute("data-lead") : +safety.getAttribute("data-safety");
+    tr.children[4].innerHTML = '<b>' + reorderPoint(LOCS[idx]) + '</b> <span class="small muted">d</span>';
+    renderRepl();
+    renderForeKPIs();
+  });
+
+  // ---------- Jobs ----------
+  function renderJobs() {
+    document.getElementById("job-rows").innerHTML = JOBS.map(function (j) {
+      var badge = j.status === "Active" ? "ok" : "warn";
+      return '<tr>' +
+        '<td><b>' + esc(j.cust) + '</b></td>' +
+        '<td class="num">' + j.locs + '</td>' +
+        '<td><span class="avatar" style="width:24px;height:24px;font-size:.72rem;display:inline-grid;vertical-align:middle;background:var(--accent-soft);color:var(--accent-deep)">' +
+          FS.initials(j.owner) + '</span> ' + esc(j.owner) + '</td>' +
+        '<td><span class="badge ' + badge + '">● ' + esc(j.status) + '</span></td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  function renderJobLocPicker() {
+    document.getElementById("job-locs").innerHTML = LOCS.map(function (l, i) {
+      return '<label style="display:flex;align-items:center;gap:8px;font-size:.9rem;cursor:pointer">' +
+        '<input type="checkbox" data-joblc="' + i + '"' + (i < 3 ? ' checked' : '') + ' /> ' + esc(l.name) +
+        ' <span class="small muted">· ' + esc(l.region) + '</span></label>';
+    }).join('');
+  }
+
+  document.getElementById("job-create").addEventListener("click", function () {
+    var name = document.getElementById("job-name").value.trim();
+    var cust = document.getElementById("job-cust").value;
+    var owner = document.getElementById("job-owner").value;
+    var picked = document.querySelectorAll('#job-locs [data-joblc]:checked').length;
+    if (!picked) { FS.toast("Select at least one DC"); return; }
+    JOBS.push({ cust: name || cust, locs: picked, owner: owner, status: "Onboarding" });
+    renderJobs();
+    FS.closeDrawer();
+    FS.toast("Job created · " + picked + " DC" + (picked === 1 ? "" : "s"));
+    document.getElementById("job-name").value = "";
+    renderJobLocPicker();
+  });
+
+  // ---------- Init / reset ----------
+  function init() {
+    cloneSeed();
+    renderRepl();
+    foreLocOptions();
+    renderForecast();
+    renderForeKPIs();
+    renderLocs();
+    renderJobs();
+    renderJobLocPicker();
+  }
+
+  window.resetDemo = function () { init(); FS.toast("Demo reset"); };
+  init();
+})();
+</script>
+</body>
+</html>

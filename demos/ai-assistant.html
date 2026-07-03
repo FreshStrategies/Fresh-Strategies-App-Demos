@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Business-Data Assistant — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+<style>
+  /* ---- Chat-specific styling (scoped, built on shared vars/classes) ---- */
+  .chat-wrap { display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
+  @media (max-width: 860px) { .chat-wrap { grid-template-columns: 1fr; } }
+
+  .chat { display: flex; flex-direction: column; height: 640px; }
+  .chat__stream { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+
+  .msg { display: flex; gap: 10px; max-width: 92%; }
+  .msg .who { width: 30px; height: 30px; border-radius: 8px; flex: none; display: grid; place-items: center; font-weight: 800; font-size: .72rem; color: #fff; }
+  .msg.assistant .who { background: var(--accent); }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg.user .who { background: var(--d-ink); }
+  .bubble { border-radius: 14px; padding: 12px 14px; font-size: .92rem; }
+  .msg.assistant .bubble { background: var(--d-surface-2); border: 1px solid var(--d-border); border-top-left-radius: 4px; }
+  .msg.user .bubble { background: var(--accent); color: #fff; border-top-right-radius: 4px; }
+  .bubble p { margin: 0 0 .5em; }
+  .bubble p:last-child { margin-bottom: 0; }
+  .bubble .cite { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--d-border-strong); font-size: .74rem; color: var(--d-muted); display: flex; align-items: center; gap: 6px; }
+  .bubble table.t { margin-top: 10px; border: 1px solid var(--d-border); border-radius: 8px; overflow: hidden; }
+  .bubble .bars { height: 120px; margin-top: 12px; }
+
+  .typing { display: inline-flex; gap: 4px; align-items: center; }
+  .typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--d-muted); opacity: .5; animation: blink 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay: .2s; }
+  .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%,60%,100% { opacity: .25; transform: translateY(0); } 30% { opacity: .9; transform: translateY(-2px); } }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 12px; }
+  .chip { font: inherit; font-size: .82rem; font-weight: 600; color: var(--accent-deep); background: var(--accent-soft); border: 1px solid transparent; border-radius: 999px; padding: .4rem .8rem; cursor: pointer; transition: border-color .12s, transform .1s; }
+  .chip:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+  .composer { display: flex; gap: 8px; padding: 14px 18px; border-top: 1px solid var(--d-border); }
+  .composer .inp { flex: 1; }
+
+  .src { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--d-border); }
+  .src:last-of-type { border-bottom: none; }
+  .src .ic { width: 30px; height: 30px; border-radius: 8px; background: var(--accent-soft); color: var(--accent-deep); display: grid; place-items: center; flex: none; }
+  .src .grow { flex: 1; min-width: 0; }
+  .src .ti { font-weight: 650; font-size: .88rem; color: var(--d-ink); }
+  .src .su { font-size: .74rem; color: var(--d-muted); }
+</style>
+</head>
+<body data-sector="ai">
+
+<div class="demo-banner">
+  <a href="../index.html#ai">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional company</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 3a4 4 0 0 1 4 4 4 4 0 0 1-1 8 3 3 0 0 1-6 0 4 4 0 0 1-1-8 4 4 0 0 1 4-4z"/><path d="M12 8v4"/><path d="M10 12h4"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">AI Business-Data Assistant</div>
+      <div class="app-header__sub">Northbay Produce Co. · <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● Read-only via secure MCP</span></div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <span class="badge" style="background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.28)">✨ Claude</span>
+    </div>
+  </header>
+
+  <div class="chat-wrap" style="margin-top:18px">
+    <!-- LEFT: chat -->
+    <div class="card chat">
+      <div class="chat__stream" id="stream"></div>
+
+      <div class="chips" id="chips"></div>
+
+      <form class="composer" id="composer" autocomplete="off">
+        <input class="inp" id="q" placeholder="Ask about your business data…" aria-label="Ask a question" />
+        <button class="btn btn-primary" type="submit">Send</button>
+      </form>
+    </div>
+
+    <!-- RIGHT: business context -->
+    <div class="card card-pad" style="align-self:start">
+      <div class="row"><h3 style="margin:0">Business context</h3></div>
+      <p class="small muted" style="margin:4px 0 10px">Connected data sources the assistant can reason over.</p>
+      <div id="sources"></div>
+
+      <button class="btn btn-ghost btn-sm" id="add-ctx" style="margin-top:14px;width:100%;justify-content:center">+ Add context</button>
+
+      <p class="small muted" style="margin:14px 0 0">The more real context you connect, the sharper the answers.</p>
+
+      <p class="small" style="margin:12px 0 0;padding-top:12px;border-top:1px solid var(--d-border);color:var(--d-muted)">
+        <span class="dot ok" style="margin-right:6px"></span>Data kept current automatically by <b>AI Document Extraction</b>.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  var esc = FS.esc, m0 = FS.money0;
+
+  // ---------- Connected data sources (seed) ----------
+  var SOURCES_SEED = [
+    { ic: "📦", ti: "Products", su: "48 SKUs · commodities & pack styles" },
+    { ic: "👥", ti: "Customers", su: "36 retail & foodservice accounts" },
+    { ic: "🧊", ti: "Inventory", su: "On-hand by lot, updated hourly" },
+    { ic: "🎯", ti: "Targets", su: "Par levels by commodity" },
+    { ic: "🧾", ti: "Orders", su: "Open & shipped, last 90 days" },
+    { ic: "🌾", ti: "Pools", su: "Grower settlement pools" }
+  ];
+  var sources = SOURCES_SEED.slice();
+
+  function renderSources() {
+    document.getElementById("sources").innerHTML = sources.map(function (s) {
+      return '<div class="src"><div class="ic">' + s.ic + '</div>' +
+        '<div class="grow"><div class="ti">' + esc(s.ti) + '</div><div class="su">' + esc(s.su) + '</div></div>' +
+        '<span class="dot ok" title="Connected"></span></div>';
+    }).join('');
+  }
+
+  // ---------- Mini-result builders ----------
+  function tableHTML(head, rows) {
+    return '<table class="t"><thead><tr>' +
+      head.map(function (h, i) { return '<th' + (i ? ' class="num"' : '') + '>' + esc(h) + '</th>'; }).join('') +
+      '</tr></thead><tbody>' +
+      rows.map(function (r) {
+        return '<tr>' + r.map(function (c, i) {
+          return '<td' + (i ? ' class="num"' : '') + '>' + c + '</td>';
+        }).join('') + '</tr>';
+      }).join('') +
+      '</tbody></table>';
+  }
+  function barsHTML(data) {
+    var max = Math.max.apply(null, data.map(function (d) { return d.v; }));
+    return '<div class="bars">' + data.map(function (d) {
+      return '<div class="bar" style="height:' + Math.round(d.v / max * 100) + '%"><span>' + esc(d.l) + '</span></div>';
+    }).join('') + '</div>';
+  }
+
+  // ---------- Canned Q → A pairs (grounded, fictional) ----------
+  var CANNED = [
+    {
+      chip: "What's our on-hand vs target by commodity?",
+      keys: ["on-hand", "on hand", "target", "par", "commodity", "inventory"],
+      answer: function () {
+        var rows = [
+          ["Broccoli", "1,240", "1,500", '<span style="color:var(--bad)">−260</span>'],
+          ["Romaine", "980", "900", '<span style="color:var(--ok)">+80</span>'],
+          ["Cauliflower", "610", "800", '<span style="color:var(--bad)">−190</span>'],
+          ["Celery", "1,420", "1,200", '<span style="color:var(--ok)">+220</span>'],
+          ["Artichoke", "340", "500", '<span style="color:var(--bad)">−160</span>']
+        ];
+        return '<p>You\'re <b>short on three of five commodities</b>. Broccoli, Cauliflower and Artichoke are all under par — Broccoli is the biggest gap at 260 cases below target.</p>' +
+          tableHTML(["Commodity", "On-hand", "Target", "Δ"], rows);
+      }
+    },
+    {
+      chip: "Which customers are trending down this month?",
+      keys: ["customer", "trending down", "declining", "down this month", "churn"],
+      answer: function () {
+        return '<p>Three accounts are ordering below their trailing 3-month average. <b>Harborline Markets</b> is the largest drop — down 18% on fewer romaine loads.</p>' +
+          tableHTML(["Customer", "vs 3-mo avg", "MTD"], [
+            ["Harborline Markets", '<span style="color:var(--bad)">−18%</span>', m0(84200)],
+            ["Verde Valley Foods", '<span style="color:var(--bad)">−11%</span>', m0(41800)],
+            ["Bluefield Grocers", '<span style="color:var(--bad)">−7%</span>', m0(29600)]
+          ]);
+      }
+    },
+    {
+      chip: "What loads are awaiting cooling?",
+      keys: ["awaiting cooling", "cooling", "loads", "cooler", "precool"],
+      answer: function () {
+        return '<p><b>Four loads</b> are staged for pre-cool. Two have been waiting over 2 hours — the Broccoli load for Harborline is closest to its ship window.</p>' +
+          tableHTML(["Load", "Commodity", "Waiting"], [
+            ["LD-4471 → Harborline", "Broccoli", '<span style="color:var(--bad)">2h 40m</span>'],
+            ["LD-4472 → Northwest DC", "Romaine", '<span style="color:var(--bad)">2h 05m</span>'],
+            ["LD-4475 → Sunridge", "Celery", "1h 10m"],
+            ["LD-4478 → Midwest DC", "Cauliflower", "0h 35m"]
+          ]);
+      }
+    },
+    {
+      chip: "Where are we short on packaging?",
+      keys: ["packaging", "short on packaging", "cartons", "boxes", "supplies"],
+      answer: function () {
+        return '<p>Two packaging lines are below reorder point. <b>Waxed broccoli cartons</b> are the tightest — about 1.5 days of cover at current run rate.</p>' +
+          barsHTML([
+            { l: "Broccoli ctn", v: 15 },
+            { l: "Romaine ctn", v: 28 },
+            { l: "Celery crate", v: 62 },
+            { l: "Artichoke tray", v: 45 },
+            { l: "Master case", v: 80 }
+          ]) +
+          '<p class="small muted" style="margin-top:26px">Bars show days of cover. Anything under ~2 days (dark) needs a reorder today.</p>';
+      }
+    },
+    {
+      chip: "Top 5 growers by net this pool",
+      keys: ["grower", "top 5", "top five", "net", "pool", "settlement"],
+      answer: function () {
+        return '<p>For the current settlement pool, <b>Verde Valley</b> leads on net return, driven by strong broccoli and celery blocks.</p>' +
+          tableHTML(["Grower", "Cases", "Net"], [
+            ["Verde Valley", "18,400", m0(212400)],
+            ["Sunridge", "15,900", m0(184100)],
+            ["Bluefield", "12,600", m0(151800)],
+            ["Rio Vista", "9,300", m0(108900)],
+            ["Ridgeview", "6,100", m0(71200)]
+          ]);
+      }
+    }
+  ];
+
+  var CITE = '<div class="cite"><span class="dot ok"></span> Answered from your business data · read-only via MCP</div>';
+
+  // ---------- Message rendering ----------
+  function scrollDown() {
+    var s = document.getElementById("stream");
+    s.scrollTop = s.scrollHeight;
+  }
+  function addUser(text) {
+    var s = document.getElementById("stream");
+    var el = document.createElement("div");
+    el.className = "msg user";
+    el.innerHTML = '<div class="who">' + esc(FS.initials("You")) + '</div><div class="bubble">' + esc(text) + '</div>';
+    s.appendChild(el);
+    scrollDown();
+  }
+  function addAssistant(innerHTML, withCite) {
+    var s = document.getElementById("stream");
+    var el = document.createElement("div");
+    el.className = "msg assistant";
+    el.innerHTML = '<div class="who">AI</div><div class="bubble">' + innerHTML + (withCite ? CITE : '') + '</div>';
+    s.appendChild(el);
+    scrollDown();
+  }
+  function addTyping() {
+    var s = document.getElementById("stream");
+    var el = document.createElement("div");
+    el.className = "msg assistant";
+    el.id = "typing-row";
+    el.innerHTML = '<div class="who">AI</div><div class="bubble"><span class="typing"><span></span><span></span><span></span></span></div>';
+    s.appendChild(el);
+    scrollDown();
+  }
+  function removeTyping() {
+    var t = document.getElementById("typing-row");
+    if (t) t.remove();
+  }
+
+  function matchCanned(text) {
+    var q = text.toLowerCase();
+    var best = null, bestScore = 0;
+    CANNED.forEach(function (c) {
+      var score = 0;
+      c.keys.forEach(function (k) { if (q.indexOf(k) !== -1) score++; });
+      if (c.chip.toLowerCase() === q) score += 10;
+      if (score > bestScore) { bestScore = score; best = c; }
+    });
+    return bestScore > 0 ? best : null;
+  }
+
+  function ask(text) {
+    text = text.trim();
+    if (!text) return;
+    addUser(text);
+    addTyping();
+    var c = matchCanned(text);
+    setTimeout(function () {
+      removeTyping();
+      if (c) {
+        addAssistant(c.answer(), true);
+      } else {
+        addAssistant('<p>Here\'s what I found across your connected sources. Ask me about on-hand vs target, customer trends, cooling queue, packaging cover, or grower pools for a grounded breakdown.</p>' +
+          tableHTML(["Source", "Records", "Freshness"], [
+            ["Inventory", "1,204 lots", "12 min ago"],
+            ["Orders", "318 open", "4 min ago"],
+            ["Pools", "1 active", "today"]
+          ]), true);
+      }
+    }, 900);
+  }
+
+  // ---------- Chips ----------
+  function renderChips() {
+    document.getElementById("chips").innerHTML = CANNED.map(function (c, i) {
+      return '<button class="chip" data-chip="' + i + '">' + esc(c.chip) + '</button>';
+    }).join('');
+  }
+
+  // ---------- Welcome ----------
+  function welcome() {
+    document.getElementById("stream").innerHTML = '';
+    addAssistant('<p>Hi — I\'m your business-data assistant for <b>Northbay Produce Co.</b> I answer questions over your live products, customers, inventory, orders and grower pools through a secure, <b>read-only</b> connection.</p><p>Try a suggested question below, or type your own.</p>');
+  }
+
+  // ---------- Wire up ----------
+  document.getElementById("composer").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var inp = document.getElementById("q");
+    ask(inp.value);
+    inp.value = "";
+    inp.focus();
+  });
+  document.getElementById("chips").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-chip]");
+    if (b) ask(CANNED[+b.getAttribute("data-chip")].chip);
+  });
+  document.getElementById("add-ctx").addEventListener("click", function () {
+    var extras = [
+      { ic: "🚚", ti: "Freight", su: "Carrier lanes & rates" },
+      { ic: "🧪", ti: "Quality", su: "QC holds & grade notes" },
+      { ic: "💳", ti: "AR", su: "Open receivables by account" }
+    ];
+    var next = extras.find(function (x) { return !sources.some(function (s) { return s.ti === x.ti; }); });
+    if (next) {
+      sources.push(next);
+      renderSources();
+      FS.toast("Context added — answers just got sharper");
+    } else {
+      FS.toast("All available context is connected");
+    }
+  });
+
+  window.resetDemo = function () {
+    sources = SOURCES_SEED.slice();
+    renderSources();
+    welcome();
+    document.getElementById("q").value = "";
+    FS.toast("Chat cleared");
+  };
+
+  function init() { renderSources(); renderChips(); welcome(); }
+  init();
+})();
+</script>
+</body>
+</html>

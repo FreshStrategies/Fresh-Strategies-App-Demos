@@ -20,13 +20,20 @@
     plug: '<path d="M9 2v6M15 2v6M7 8h10v3a5 5 0 01-10 0z"/><path d="M12 16v6"/>',
     robot: '<rect x="4" y="8" width="16" height="11" rx="2"/><path d="M12 8V4M9 13h.01M15 13h.01M9 16h6"/>',
     rocket: '<path d="M5 15c-1 1-1 4-1 4s3 0 4-1m6-12a8 8 0 00-9 9l3 3a8 8 0 009-9 6 6 0 00-3-3z"/><circle cx="14.5" cy="9.5" r="1.5"/>',
-    home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/>'
+    home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/>',
+    boxes: '<path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v8l9 4 9-4V8"/><path d="M12 12v8"/>',
+    coins: '<ellipse cx="9" cy="7" rx="6" ry="3"/><path d="M3 7v5c0 1.5 2.7 2.8 6 3"/><ellipse cx="15" cy="14" rx="6" ry="3"/><path d="M9 14.5V17c0 1.7 2.7 3 6 3s6-1.3 6-3v-3"/>',
+    sync: '<path d="M20 11a8 8 0 00-14-4.5L3 9M4 13a8 8 0 0014 4.5L21 15"/><path d="M21 4v5h-5M3 20v-5h5"/>',
+    trace: '<circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M8.4 6H15a3 3 0 013 3 3 3 0 01-3 3H9a3 3 0 00-3 3 3 3 0 003 3h6.6"/>',
+    chat: '<path d="M4 5h16v11H8l-4 4z"/><path d="M8 9.5h8M8 12.5h5"/>',
+    box: '<path d="M3 8l9-4 9 4v8l-9 4-9-4z"/><path d="M3 8l9 4 9-4M12 12v8"/>',
+    doc: '<path d="M6 2h8l5 5v15H6z"/><path d="M14 2v6h5"/><path d="M9 13h6M9 17h5"/>'
   };
   function icon(name, cls) {
     return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[name] || '') + '</svg>';
   }
 
-  var SECTOR_LABEL = { ag: "Agriculture", elec: "Electrical", fin: "Finance", rental: "Real Estate" };
+  var SECTOR_LABEL = { ag: "Agriculture", elec: "Electrical", fin: "Finance", rental: "Real Estate", logistics: "Logistics", ai: "AI & Automation" };
 
   function cardPreview(app) {
     // pure-CSS mini mockup tinted by sector
@@ -69,7 +76,7 @@
     var el = document.querySelector(selector);
     if (el) el.innerHTML = items.map(render).join('');
   }
-  ["ag", "elec", "fin", "rental"].forEach(function (s) {
+  ["ag", "elec", "fin", "rental", "logistics", "ai"].forEach(function (s) {
     fill('[data-grid="' + s + '"]', window.FS_APPS.filter(function (a) { return a.sector === s; }), appCard);
   });
   fill('[data-grid="cap"]', window.FS_CAPABILITIES, capCard);

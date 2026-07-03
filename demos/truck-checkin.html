@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Truck Check-In &amp; Dock Scheduling — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="logistics">
+
+<div class="demo-banner">
+  <a href="../index.html#logistics">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · live yard board</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 7h11v8H3z"/><path d="M14 10h4l3 3v2h-7z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Truck Check-In</div>
+      <div class="app-header__sub">Northbay Produce Co. · yard &amp; dock scheduling</div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher" id="wh-switch">
+      <select id="warehouse" class="inp" style="width:auto;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)">
+        <option value="Northwest DC">Northwest DC</option>
+        <option value="Southeast DC">Southeast DC</option>
+      </select>
+    </div>
+    <div class="pill-toggle" id="role" style="margin-left:10px"><button class="active" data-role="ops">Dock Ops</button><button data-role="driver">Driver</button></div>
+  </header>
+
+  <!-- ============ DRIVER (phone) ============ -->
+  <div class="phone-stage" id="driver-stage" style="display:none">
+    <div class="phone">
+      <div class="phone__screen">
+        <div class="phone__notch"></div>
+        <div class="m-header">
+          <span class="avatar">NP</span>
+          <div><h3 id="m-title">Arrival Check-In</h3><div class="small" style="color:rgba(255,255,255,.8)">Scan · confirm · get your dock</div></div>
+        </div>
+        <div class="m-body" id="m-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DOCK OPS (desktop) ============ -->
+  <div id="ops-stage">
+    <div class="grid grid-4" style="margin:20px 0">
+      <div class="stat"><div class="label">In yard</div><div class="value" id="s-yard">0</div></div>
+      <div class="stat"><div class="label">Awaiting match</div><div class="value" id="s-await">0</div></div>
+      <div class="stat"><div class="label">At dock</div><div class="value" id="s-dock">0</div></div>
+      <div class="stat"><div class="label">Completed today</div><div class="value" id="s-done">0</div></div>
+    </div>
+
+    <div class="row" style="margin:0 0 12px">
+      <p class="section-title" style="margin:0">Truck queue</p>
+      <span class="spacer small muted" id="wh-label">Northwest DC · auto-refresh ●</span>
+    </div>
+    <div class="table-wrap">
+      <table class="t">
+        <thead>
+          <tr><th>Status</th><th>Pickup #</th><th>Carrier</th><th>Driver</th><th>Mobile</th><th>Arrived</th><th>Dock</th></tr>
+        </thead>
+        <tbody id="queue"></tbody>
+      </table>
+    </div>
+    <p class="small muted" style="margin-top:10px">Tap any row to match the order, assign a door, advance status, and text the driver.</p>
+  </div>
+</div>
+
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="truck-drawer">
+  <div class="drawer__head"><h3 style="margin:0" id="td-title">Truck</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body" id="td-body"></div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  // ---------- Model ----------
+  var STATUSES = ["Submitted","Matched","At dock","Departed"];
+  function statusClass(s){ return s==="Departed"?"ok": s==="At dock"?"info": s==="Matched"?"accent":"warn"; }
+  function badge(s){ return '<span class="badge '+statusClass(s)+'">'+s+'</span>'; }
+  function nextOf(s){ var i=STATUSES.indexOf(s); return STATUSES[Math.min(i+1,STATUSES.length-1)]; }
+
+  var CARRIERS = ["Coastway Freight","Valley Transport","Ridgeline Carriers"];
+
+  // matched-order detail keyed by pickup #
+  var ORDERS = {
+    "PU-7781": { so:"SO-4821", customer:"Harborline Markets", dir:"Delivery", items:[["Broccoli","14 pallets"],["Romaine","8 pallets"],["Celery","6 pallets"]] },
+    "PU-7782": { so:"SO-4830", customer:"Verde Valley",       dir:"Pickup",   items:[["Iceberg","20 pallets"],["Cauliflower","10 pallets"]] },
+    "PU-7783": { so:"SO-4834", customer:"Sunridge",           dir:"Pickup",   items:[["Carrots","16 pallets"],["Celery","4 pallets"]] },
+    "PU-7784": { so:"SO-4839", customer:"Harborline Markets", dir:"Delivery", items:[["Brussels Sprouts","9 pallets"],["Broccoli","11 pallets"]] },
+    "PU-7785": { so:"SO-4841", customer:"Bluefield",          dir:"Pickup",   items:[["Artichoke","7 pallets"],["Romaine","13 pallets"]] },
+    "PU-7786": { so:"SO-4845", customer:"Rio Vista",         dir:"Pickup",   items:[["Cauliflower","12 pallets"],["Iceberg","10 pallets"]] }
+  };
+
+  function seed(){ return [
+    { pu:"PU-7781", carrier:"Coastway Freight",  driver:"Dana Cole",   mobile:"(555) 204-7781", dir:"Delivery", status:"At dock",   dock:"Dock 6",  arrived:"6:52a",
+      sms:[["out","Matched to Order SO-4821. Dock 6 assigned — please pull to door 6.","6:53a"],["in","On my way to 6, thanks","6:55a"]] },
+    { pu:"PU-7782", carrier:"Valley Transport",  driver:"Alex Reyes",  mobile:"(555) 204-7782", dir:"Pickup",   status:"Matched",   dock:"Dock 2",  arrived:"7:08a",
+      sms:[["out","Matched to Order SO-4830. Dock 2 assigned — we'll text when the door is open.","7:09a"]] },
+    { pu:"PU-7783", carrier:"Ridgeline Carriers",driver:"Sam Okafor",  mobile:"(555) 204-7783", dir:"Pickup",   status:"Submitted", dock:"—",       arrived:"7:15a",
+      sms:[["out","Thanks — you're checked in. We're matching your load now.","7:15a"],["in","running 15 late, sorry","7:17a"]] },
+    { pu:"PU-7784", carrier:"Coastway Freight",  driver:"Jordan Pace", mobile:"(555) 204-7784", dir:"Delivery", status:"Departed",  dock:"Dock 4",  arrived:"5:40a",
+      sms:[["out","Matched to Order SO-4839. Dock 4 assigned.","5:41a"],["out","You're all set — safe travels.","6:58a"]] },
+    { pu:"PU-7785", carrier:"Valley Transport",  driver:"Maria Vela",  mobile:"(555) 204-7785", dir:"Pickup",   status:"Submitted", dock:"—",       arrived:"7:22a",
+      sms:[["out","Thanks — you're checked in. We're matching your load now.","7:22a"]] },
+    { pu:"PU-7786", carrier:"Ridgeline Carriers",driver:"Leo Marsh",   mobile:"(555) 204-7786", dir:"Pickup",   status:"Matched",   dock:"Dock 9",  arrived:"7:31a",
+      sms:[["out","Matched to Order SO-4845. Dock 9 assigned — please pull to door 9.","7:32a"]] }
+  ]; }
+  var trucks = seed();
+  var driverSubmitted = false;
+
+  // ---------- Dock Ops render ----------
+  function inYard(t){ return t.status==="Submitted" || t.status==="Matched" || t.status==="At dock"; }
+
+  function renderStats(){
+    document.getElementById("s-yard").textContent  = trucks.filter(inYard).length;
+    document.getElementById("s-await").textContent = trucks.filter(function(t){return t.status==="Submitted";}).length;
+    document.getElementById("s-dock").textContent  = trucks.filter(function(t){return t.status==="At dock";}).length;
+    document.getElementById("s-done").textContent  = trucks.filter(function(t){return t.status==="Departed";}).length;
+  }
+
+  function renderQueue(){
+    document.getElementById("queue").innerHTML = trucks.map(function(t){
+      return '<tr class="clickable" data-pu="'+FS.esc(t.pu)+'">'+
+        '<td>'+badge(t.status)+'</td>'+
+        '<td><b>'+FS.esc(t.pu)+'</b></td>'+
+        '<td>'+FS.esc(t.carrier)+'</td>'+
+        '<td>'+FS.esc(t.driver)+'</td>'+
+        '<td class="small muted">'+FS.esc(t.mobile)+'</td>'+
+        '<td class="small muted">'+FS.esc(t.arrived)+'</td>'+
+        '<td>'+(t.dock==="—"?'<span class="muted">—</span>':'<span class="badge muted">'+FS.esc(t.dock)+'</span>')+'</td>'+
+      '</tr>';
+    }).join('');
+  }
+
+  function renderOps(){ renderStats(); renderQueue(); }
+
+  // ---------- Truck drawer ----------
+  function dockOptions(sel){
+    var out = '<option value="—"'+(sel==="—"?" selected":"")+'>Unassigned</option>';
+    for (var i=1;i<=10;i++){ var d="Dock "+i; out += '<option value="'+d+'"'+(sel===d?" selected":"")+'>'+d+'</option>'; }
+    return out;
+  }
+  function smsThread(t){
+    return t.sms.map(function(m){
+      var mine = m[0]==="out";
+      return '<div class="row" style="justify-content:'+(mine?'flex-end':'flex-start')+';margin-bottom:8px">'+
+        '<div style="max-width:78%;padding:.5rem .7rem;border-radius:12px;font-size:.85rem;'+
+          (mine
+            ? 'background:var(--accent);color:#fff;border-bottom-right-radius:4px'
+            : 'background:var(--d-surface-2);border:1px solid var(--d-border);border-bottom-left-radius:4px')+'">'+
+          FS.esc(m[1])+
+          '<div style="font-size:.68rem;opacity:.7;margin-top:3px;text-align:right">'+FS.esc(m[2])+'</div>'+
+        '</div></div>';
+    }).join('');
+  }
+
+  function openTruck(pu){
+    var t = trucks.find(function(x){return x.pu===pu;});
+    if (!t) return;
+    var o = ORDERS[t.pu] || { so:"—", customer:"—", items:[] };
+    document.getElementById("td-title").textContent = t.pu + " · " + t.carrier;
+    var canAdvance = t.status !== "Departed";
+    var advLabel = t.status==="Submitted" ? "Confirm match" : t.status==="Matched" ? "Check in at dock" : "Mark departed";
+
+    document.getElementById("td-body").innerHTML =
+      '<div class="row" style="margin-bottom:12px">'+badge(t.status)+
+        '<span class="spacer small muted">'+FS.esc(t.driver)+' · '+FS.esc(t.mobile)+' · arrived '+FS.esc(t.arrived)+'</span></div>'+
+
+      '<p class="section-title" style="font-size:.95rem;margin-top:0">Order match</p>'+
+      '<div class="card card-pad">'+
+        '<div class="row"><div class="ti" style="font-weight:700;color:var(--d-ink)">Order '+FS.esc(o.so)+'</div>'+
+          '<span class="spacer badge '+(t.dir==="Delivery"?"info":"accent")+'">'+FS.esc(t.dir)+'</span></div>'+
+        '<div class="small muted" style="margin:4px 0 10px">Customer · '+FS.esc(o.customer)+'</div>'+
+        '<table class="t">'+ o.items.map(function(it){ return '<tr><td>'+FS.esc(it[0])+'</td><td class="num">'+FS.esc(it[1])+'</td></tr>'; }).join('') +'</table>'+
+      '</div>'+
+
+      '<p class="section-title" style="font-size:.95rem">Dock assignment</p>'+
+      '<div class="field"><select class="inp" id="td-dock">'+dockOptions(t.dock)+'</select></div>'+
+
+      (canAdvance
+        ? '<button class="btn btn-primary" style="width:100%;justify-content:center" data-advance="'+FS.esc(t.pu)+'">'+advLabel+' → '+nextOf(t.status)+'</button>'
+        : '<div class="badge ok" style="width:100%;justify-content:center;padding:.6rem">✓ Departed</div>')+
+
+      '<p class="section-title" style="font-size:.95rem">SMS thread</p>'+
+      '<div id="td-sms">'+smsThread(t)+'</div>'+
+      '<div class="row" style="margin-top:6px"><input class="inp" id="td-msg" placeholder="Text the driver…"><button class="btn btn-primary btn-sm" style="margin-left:8px" data-sendsms="'+FS.esc(t.pu)+'">Send</button></div>';
+
+    var dockSel = document.getElementById("td-dock");
+    dockSel.addEventListener("change", function(){
+      t.dock = dockSel.value;
+      FS.toast(t.pu + " → " + (t.dock==="—"?"door cleared":t.dock+" assigned"));
+      renderOps();
+    });
+    FS.openDrawer("truck-drawer");
+  }
+
+  function advance(pu){
+    var t = trucks.find(function(x){return x.pu===pu;});
+    if (!t) return;
+    var ns = nextOf(t.status);
+    t.status = ns;
+    if (ns==="Matched" && t.dock==="—") t.dock = "Dock 3";
+    t.sms.push(["out", ns==="Matched" ? ("Matched to Order "+(ORDERS[t.pu]?ORDERS[t.pu].so:"—")+". "+t.dock+" assigned.")
+                     : ns==="At dock" ? "Door is open — please pull to "+t.dock+"."
+                     : "You're all set — safe travels.", "now"]);
+    FS.toast(t.pu + " → " + ns);
+    renderOps();
+    if (document.getElementById("truck-drawer").classList.contains("open")) openTruck(pu);
+  }
+
+  // ---------- Driver (phone) ----------
+  function driverForm(){
+    return '<div class="card card-pad">'+
+      '<div class="field"><label class="lbl">Carrier</label><select class="inp" id="dv-carrier">'+
+        CARRIERS.map(function(c){return '<option>'+c+'</option>';}).join('')+'</select></div>'+
+      '<div class="field"><label class="lbl">Driver name</label><input class="inp" id="dv-name" placeholder="Full name" value="Chris Nolan"></div>'+
+      '<div class="field"><label class="lbl">Mobile #</label><input class="inp" id="dv-mobile" placeholder="(555) 000-0000" value="(555) 204-7790"></div>'+
+      '<div class="field"><label class="lbl">Pickup #</label><input class="inp" id="dv-pu" placeholder="e.g. PU-7790" value="PU-7790"></div>'+
+      '<div class="field"><label class="lbl">Direction</label>'+
+        '<div class="pill-toggle" id="dv-dir" style="background:var(--d-surface-2);border:1px solid var(--d-border)">'+
+          '<button type="button" class="active" data-dir="Pickup" style="color:var(--d-muted)">Pickup</button>'+
+          '<button type="button" data-dir="Delivery" style="color:var(--d-muted)">Delivery</button>'+
+        '</div></div>'+
+      '<div class="field"><label class="lbl">Bill of lading photo</label>'+
+        '<div class="sigpad" id="dv-photo" style="height:96px">📷 Tap to attach photo</div></div>'+
+      '<label class="row small" style="gap:8px;margin-bottom:14px;cursor:pointer"><input type="checkbox" id="dv-sms" checked> Text me my dock &amp; wait-time updates</label>'+
+      '<button class="btn btn-primary" style="width:100%;justify-content:center" id="dv-submit">Check in →</button>'+
+    '</div>'+
+    '<p class="small muted" style="margin-top:12px;text-align:center">You scanned the gate QR at Northbay Produce Co.</p>';
+  }
+
+  function driverSuccess(pu, dir){
+    return '<div class="card card-pad" style="text-align:center">'+
+      '<div style="width:56px;height:56px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center;margin:6px auto 12px;font-size:1.6rem">✓</div>'+
+      '<h3 style="margin:0 0 4px">You\'re checked in</h3>'+
+      '<div class="badge accent" style="margin-bottom:12px">'+FS.esc(pu)+' · '+FS.esc(dir)+'</div>'+
+      '<div class="card" style="background:var(--d-surface-2);padding:14px;text-align:left;margin-bottom:12px">'+
+        '<div class="row"><span class="small muted">Matched order</span><b class="spacer">SO-4821</b></div>'+
+        '<div class="row" style="margin-top:6px"><span class="small muted">Dock assigned</span><b class="spacer">Dock 6</b></div>'+
+        '<div class="row" style="margin-top:6px"><span class="small muted">Est. wait</span><b class="spacer">~12 min</b></div>'+
+      '</div>'+
+      '<p class="small muted" style="margin:0 0 12px">Matched to Order #SO-4821 · Dock 6 assigned · we texted you the details.</p>'+
+      '<button class="btn btn-ghost btn-sm" id="dv-again">Check in another truck</button>'+
+    '</div>';
+  }
+
+  function renderDriver(){
+    document.getElementById("m-body").innerHTML = driverSubmitted ? driverSuccess(window._lastPU||"PU-7790", window._lastDir||"Pickup") : driverForm();
+  }
+
+  // ---------- Role / warehouse switch ----------
+  function setRole(role){
+    document.getElementById("ops-stage").style.display    = role==="ops" ? "" : "none";
+    document.getElementById("driver-stage").style.display = role==="driver" ? "flex" : "none";
+    document.querySelectorAll("#role button").forEach(function(b){ b.classList.toggle("active", b.getAttribute("data-role")===role); });
+    if (role==="driver") renderDriver(); else renderOps();
+  }
+
+  // ---------- Events ----------
+  document.getElementById("role").addEventListener("click", function(e){
+    var b = e.target.closest("[data-role]"); if(!b) return; setRole(b.getAttribute("data-role"));
+  });
+  document.getElementById("warehouse").addEventListener("change", function(e){
+    document.getElementById("wh-label").textContent = e.target.value + " · auto-refresh ●";
+    FS.toast("Switched to " + e.target.value);
+  });
+
+  document.addEventListener("click", function(e){
+    // Dock ops
+    var adv = e.target.closest("[data-advance]"); if (adv) { advance(adv.getAttribute("data-advance")); return; }
+    var send = e.target.closest("[data-sendsms]");
+    if (send) {
+      var pu = send.getAttribute("data-sendsms");
+      var t = trucks.find(function(x){return x.pu===pu;});
+      var box = document.getElementById("td-msg");
+      var txt = box && box.value.trim() ? box.value.trim() : "Door is open — please pull forward.";
+      if (t) { t.sms.push(["out", txt, "now"]); FS.toast("Text sent to " + t.driver); openTruck(pu); }
+      return;
+    }
+    var row = e.target.closest("[data-pu]"); if (row) { openTruck(row.getAttribute("data-pu")); return; }
+
+    // Driver direction toggle
+    var dir = e.target.closest("#dv-dir [data-dir]");
+    if (dir) { document.querySelectorAll("#dv-dir button").forEach(function(x){x.classList.toggle("active", x===dir);}); return; }
+
+    // Driver photo tile
+    if (e.target.closest("#dv-photo")) {
+      var p = document.getElementById("dv-photo");
+      p.innerHTML = '<b style="font-style:normal;color:var(--accent-deep)">✓ BOL_scan.jpg attached</b>';
+      FS.toast("Photo attached"); return;
+    }
+
+    // Driver submit
+    if (e.target.closest("#dv-submit")) {
+      var pu2 = (document.getElementById("dv-pu").value||"PU-7790").trim();
+      var name = (document.getElementById("dv-name").value||"Chris Nolan").trim();
+      var mob  = (document.getElementById("dv-mobile").value||"(555) 204-7790").trim();
+      var car  = document.getElementById("dv-carrier").value;
+      var d    = document.querySelector("#dv-dir button.active");
+      var dirV = d ? d.getAttribute("data-dir") : "Pickup";
+      window._lastPU = pu2; window._lastDir = dirV;
+      // add to ops queue as a fresh Submitted truck
+      if (!trucks.find(function(x){return x.pu===pu2;})) {
+        trucks.unshift({ pu:pu2, carrier:car, driver:name, mobile:mob, dir:dirV, status:"Submitted", dock:"—", arrived:"now",
+          sms:[["out","Thanks — you're checked in. We're matching your load now.","now"]] });
+        ORDERS[pu2] = ORDERS[pu2] || { so:"SO-4821", customer:"Harborline Markets", dir:dirV, items:[["Broccoli","10 pallets"],["Romaine","6 pallets"]] };
+      }
+      driverSubmitted = true;
+      renderDriver();
+      FS.toast("Matched to SO-4821 · Dock 6 — we texted you");
+      return;
+    }
+    if (e.target.closest("#dv-again")) { driverSubmitted = false; renderDriver(); return; }
+  });
+
+  window.resetDemo = function(){
+    trucks = seed(); driverSubmitted = false;
+    document.getElementById("warehouse").value = "Northwest DC";
+    document.getElementById("wh-label").textContent = "Northwest DC · auto-refresh ●";
+    FS.closeDrawer();
+    setRole("ops");
+    document.querySelector('#role [data-role="ops"]').classList.add("active");
+    document.querySelector('#role [data-role="driver"]').classList.remove("active");
+    FS.toast("Demo reset");
+  };
+
+  setRole("ops");
+})();
+</script>
+</body>
+</html>

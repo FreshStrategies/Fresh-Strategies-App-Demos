@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Document Extraction — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="ai">
+
+<div class="demo-banner">
+  <a href="../index.html#ai">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional company</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M4 5h11l4 4v10H4z"/><path d="M15 5v4h4"/><path d="M8 13h7M8 16h5"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">AI Document Extraction</div>
+      <div class="app-header__sub">Northbay Produce Co. · <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● Weekly market reports</span></div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <span class="badge accent" style="background:rgba(255,255,255,.18);color:#fff">✨ Powered by Claude</span>
+    </div>
+  </header>
+
+  <div data-tabs>
+    <div class="tabs">
+      <button class="tab active" data-panel="p-extract">Extract</button>
+      <button class="tab" data-panel="p-review">Review <span class="badge-num" id="review-count">0</span></button>
+      <button class="tab" data-panel="p-history">History</button>
+      <button class="tab" data-panel="p-analytics">Analytics</button>
+    </div>
+
+    <!-- EXTRACT -->
+    <section class="panel active" id="p-extract">
+      <div class="card card-pad" id="dropzone" style="border:2px dashed var(--d-border-strong);text-align:center;padding:36px 18px">
+        <div style="width:56px;height:56px;border-radius:14px;background:var(--accent-soft);color:var(--accent-deep);display:grid;place-items:center;margin:0 auto 12px">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
+        </div>
+        <h3 style="margin:0 0 4px">Drop this week's market report PDF</h3>
+        <p class="small muted" style="margin:0 0 16px">A 30–40 page pricing &amp; volume report arrives every week. Claude reads it and extracts the figures into your database.</p>
+        <button class="btn btn-primary" id="upload-btn">⬆ Upload weekly report</button>
+        <div id="extract-progress" style="max-width:460px;margin:22px auto 0;display:none">
+          <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="small" id="progress-label" style="font-weight:600">Claude is reading…</span><span class="small muted" id="progress-pct">0%</span></div>
+          <div class="progress"><i id="progress-bar" style="width:0%;transition:width .35s ease"></i></div>
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="row"><h3 style="margin:0">Recent report batches</h3><span class="spacer small muted" id="batch-caption"></span></div>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:10px">
+          <table class="t">
+            <thead><tr><th>Week ending</th><th class="num">Pages</th><th class="num">Rows</th><th>Status</th></tr></thead>
+            <tbody id="batch-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- REVIEW -->
+    <section class="panel" id="p-review">
+      <div id="review-empty" class="card card-pad" style="text-align:center;padding:44px 18px">
+        <div style="font-size:1.6rem">📄</div>
+        <h3 style="margin:8px 0 4px">Nothing waiting for review</h3>
+        <p class="small muted" style="margin:0">Upload a weekly report on the Extract tab. Claude's extraction will land here for a person to approve before it hits the database.</p>
+      </div>
+
+      <div id="review-content" style="display:none">
+        <div class="card card-pad" style="border-left:4px solid var(--accent)">
+          <div class="row wrap">
+            <div>
+              <h3 style="margin:0 0 2px">Extraction ready for review · <span id="rv-week"></span></h3>
+              <p class="small muted" style="margin:0">Claude read <b id="rv-pages"></b> pages and extracted <b id="rv-rows"></b> rows across 3 tables. <span class="badge warn" style="margin-left:4px"><span class="dot warn"></span> = low confidence — please verify</span></p>
+            </div>
+            <div class="spacer row" style="gap:8px">
+              <button class="btn btn-ghost btn-sm" id="discard-btn">Discard</button>
+              <button class="btn btn-primary btn-sm" id="approve-btn">✓ Approve &amp; save</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-pad" style="margin-top:16px">
+          <div class="row"><h3 style="margin:0">Market Summary</h3><span class="spacer badge muted" id="ms-count"></span></div>
+          <div class="table-wrap" style="box-shadow:none;border:none;margin-top:10px">
+            <table class="t">
+              <thead><tr><th>Commodity</th><th class="num">Avg price</th><th class="num">Low</th><th class="num">High</th><th>Trend</th></tr></thead>
+              <tbody id="ms-rows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="grid grid-2" style="margin-top:16px">
+          <div class="card card-pad">
+            <div class="row"><h3 style="margin:0">Price Rank</h3><span class="spacer badge muted" id="pr-count"></span></div>
+            <div class="table-wrap" style="box-shadow:none;border:none;margin-top:10px">
+              <table class="t">
+                <thead><tr><th>Commodity</th><th class="num">Our rank</th><th class="num">vs market</th></tr></thead>
+                <tbody id="pr-rows"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card card-pad">
+            <div class="row"><h3 style="margin:0">Volume Share</h3><span class="spacer badge muted" id="vs-count"></span></div>
+            <div class="table-wrap" style="box-shadow:none;border:none;margin-top:10px">
+              <table class="t">
+                <thead><tr><th>Commodity</th><th class="num">Our %</th><th class="num">Total (cases)</th></tr></thead>
+                <tbody id="vs-rows"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="panel" id="p-history">
+      <div class="card card-pad">
+        <div class="row"><h3 style="margin:0">Imported batches</h3><span class="spacer small muted">Every batch below was extracted by AI and approved by a person.</span></div>
+        <div class="table-wrap" style="box-shadow:none;border:none;margin-top:10px">
+          <table class="t">
+            <thead><tr><th>Week ending</th><th class="num">Rows</th><th>Imported at</th><th>Status</th><th></th></tr></thead>
+            <tbody id="history-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section class="panel" id="p-analytics">
+      <div class="grid grid-3">
+        <div class="stat"><div class="label">Weeks captured</div><div class="value" id="st-weeks"></div><div class="delta up">from PDF reports</div></div>
+        <div class="stat"><div class="label">Rows in database</div><div class="value" id="st-rows"></div><div class="delta up">extracted &amp; approved</div></div>
+        <div class="stat"><div class="label">Commodities tracked</div><div class="value" id="st-comm"></div><div class="delta up">across every report</div></div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="card card-pad">
+          <div class="row"><h3 style="margin:0">Avg market price trend</h3><span class="spacer badge accent" id="trend-comm"></span></div>
+          <p class="small muted" style="margin:2px 0 0">$/case · last 6 weeks · Romaine</p>
+          <div class="bars" id="trend-bars" style="margin-top:20px"></div>
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 2px">Our volume share by commodity</h3>
+          <p class="small muted" style="margin:0">Latest approved week · % of market cases</p>
+          <div class="bars" id="share-bars" style="margin-top:20px"></div>
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px;background:var(--accent-soft);border-color:var(--accent)">
+        <p class="small" style="margin:0;color:var(--accent-deep);font-weight:600">✨ Every figure here came from a PDF — extracted by AI, approved by a person.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  var m = FS.money;
+
+  // ---------- Seed: 6 weeks of imported history, 5 commodities ----------
+  var COMMODITIES = ["Broccoli", "Cauliflower", "Romaine", "Iceberg", "Artichoke"];
+
+  var SEED_HISTORY = [
+    { week: "May 24, 2026", rows: 47, imported: "May 26 · 8:12a", price: 18.40 },
+    { week: "May 31, 2026", rows: 47, imported: "Jun 2 · 7:58a",  price: 19.10 },
+    { week: "Jun 7, 2026",  rows: 47, imported: "Jun 9 · 8:04a",  price: 18.75 },
+    { week: "Jun 14, 2026", rows: 47, imported: "Jun 16 · 8:21a", price: 20.30 },
+    { week: "Jun 21, 2026", rows: 47, imported: "Jun 23 · 7:49a", price: 21.05 },
+    { week: "Jun 28, 2026", rows: 47, imported: "Jun 30 · 8:09a", price: 20.60 }
+  ];
+
+  // The pending week that "arrives" when you upload
+  var PENDING_WEEK = "Jul 5, 2026";
+  var PENDING_PAGES = 34;
+
+  // Extracted tables for the pending report. w:true = low-confidence cell.
+  var MARKET_SUMMARY = [
+    { c: "Broccoli",        avg: 16.20, lo: 14.50, hi: 18.75, trend: "▲ up",   w: false },
+    { c: "Cauliflower",     avg: 17.85, lo: 15.90, hi: 20.10, trend: "▲ up",   w: false },
+    { c: "Romaine",         avg: 21.40, lo: 18.20, hi: 24.90, trend: "▼ down", w: true  },
+    { c: "Iceberg",         avg: 13.60, lo: 11.80, hi: 15.40, trend: "→ flat", w: false },
+    { c: "Artichoke",       avg: 28.75, lo: 24.10, hi: 33.20, trend: "▲ up",   w: true  }
+  ];
+  var PRICE_RANK = [
+    { c: "Broccoli",    rank: 2, vs: "+3.1%",  w: false },
+    { c: "Cauliflower", rank: 1, vs: "+5.4%",  w: false },
+    { c: "Romaine",     rank: 4, vs: "-1.8%",  w: true  },
+    { c: "Iceberg",     rank: 3, vs: "+0.6%",  w: false },
+    { c: "Artichoke",   rank: 1, vs: "+7.2%",  w: false }
+  ];
+  var VOLUME_SHARE = [
+    { c: "Broccoli",    pct: 18.4, total: 42600, w: false },
+    { c: "Cauliflower", pct: 22.1, total: 31200, w: false },
+    { c: "Romaine",     pct: 14.7, total: 58900, w: false },
+    { c: "Iceberg",     pct: 11.2, total: 61500, w: true  },
+    { c: "Artichoke",   pct: 26.8, total: 12400, w: false }
+  ];
+
+  // Volume share for latest APPROVED week (drives analytics chart)
+  var LATEST_SHARE = [
+    { c: "Broccoli", pct: 17.9 },
+    { c: "Cauliflower", pct: 21.6 },
+    { c: "Romaine", pct: 14.2 },
+    { c: "Iceberg", pct: 10.8 },
+    { c: "Artichoke", pct: 25.9 }
+  ];
+
+  // ---------- Mutable state ----------
+  var history, pending;
+
+  function seed() {
+    history = SEED_HISTORY.slice();
+    pending = null;
+  }
+
+  var warn = '<span class="dot warn" title="Low confidence — please verify" style="margin-left:5px;vertical-align:middle"></span>';
+
+  // ---------- Extract tab ----------
+  function renderBatches() {
+    var caption = history.length + " weeks imported";
+    document.getElementById("batch-caption").textContent = caption;
+    var rows = history.slice().reverse();
+    var html = rows.map(function (b) {
+      return '<tr><td><b>' + FS.esc(b.week) + '</b></td><td class="num">34</td><td class="num">' + b.rows +
+        '</td><td><span class="badge ok"><span class="dot ok"></span> Imported</span></td></tr>';
+    });
+    if (pending) {
+      html.unshift('<tr style="background:var(--warn-soft)"><td><b>' + FS.esc(pending.week) + '</b></td><td class="num">' + pending.pages +
+        '</td><td class="num">' + pending.rows + '</td><td><span class="badge warn"><span class="dot warn"></span> Awaiting review</span></td></tr>');
+    }
+    document.getElementById("batch-rows").innerHTML = html.join("");
+  }
+
+  function runExtraction() {
+    var btn = document.getElementById("upload-btn");
+    var box = document.getElementById("extract-progress");
+    var bar = document.getElementById("progress-bar");
+    var lbl = document.getElementById("progress-label");
+    var pct = document.getElementById("progress-pct");
+    btn.disabled = true;
+    box.style.display = "block";
+    var steps = [
+      { p: 12, t: "Uploading market report PDF…" },
+      { p: 32, t: "Claude is reading " + PENDING_PAGES + " pages…" },
+      { p: 58, t: "Extracting pricing &amp; volume tables…" },
+      { p: 82, t: "Structuring 47 rows for the database…" },
+      { p: 100, t: "Flagging low-confidence figures for review…" }
+    ];
+    var i = 0;
+    function tick() {
+      var s = steps[i];
+      bar.style.width = s.p + "%";
+      lbl.innerHTML = s.t;
+      pct.textContent = s.p + "%";
+      i++;
+      if (i < steps.length) {
+        setTimeout(tick, 620);
+      } else {
+        setTimeout(function () {
+          pending = { week: PENDING_WEEK, pages: PENDING_PAGES, rows: 47 };
+          box.style.display = "none";
+          bar.style.width = "0%";
+          btn.disabled = false;
+          renderBatches();
+          renderReview();
+          updateReviewBadge();
+          FS.toast("Extraction complete · 47 rows ready to review");
+          // auto-switch to Review
+          document.querySelector('.tab[data-panel="p-review"]').click();
+        }, 700);
+      }
+    }
+    tick();
+  }
+
+  // ---------- Review tab ----------
+  function cell(val, isWarn) {
+    return val + (isWarn ? warn : "");
+  }
+  function renderReview() {
+    var empty = document.getElementById("review-empty");
+    var content = document.getElementById("review-content");
+    if (!pending) {
+      empty.style.display = "block";
+      content.style.display = "none";
+      return;
+    }
+    empty.style.display = "none";
+    content.style.display = "block";
+    document.getElementById("rv-week").textContent = pending.week;
+    document.getElementById("rv-pages").textContent = pending.pages;
+    document.getElementById("rv-rows").textContent = pending.rows;
+
+    document.getElementById("ms-count").textContent = MARKET_SUMMARY.length + " rows";
+    document.getElementById("pr-count").textContent = PRICE_RANK.length + " rows";
+    document.getElementById("vs-count").textContent = VOLUME_SHARE.length + " rows";
+
+    document.getElementById("ms-rows").innerHTML = MARKET_SUMMARY.map(function (r) {
+      var td = r.trend.indexOf("down") > -1 ? 'var(--bad)' : (r.trend.indexOf("up") > -1 ? 'var(--ok)' : 'var(--d-muted)');
+      return '<tr' + (r.w ? ' style="background:var(--warn-soft)"' : '') + '><td><b>' + r.c + '</b></td><td class="num">' + cell(m(r.avg), r.w) +
+        '</td><td class="num">' + m(r.lo) + '</td><td class="num">' + m(r.hi) +
+        '</td><td style="color:' + td + ';font-weight:600">' + r.trend + '</td></tr>';
+    }).join("");
+
+    document.getElementById("pr-rows").innerHTML = PRICE_RANK.map(function (r) {
+      var col = r.vs.indexOf("-") === 0 ? 'var(--bad)' : 'var(--ok)';
+      return '<tr' + (r.w ? ' style="background:var(--warn-soft)"' : '') + '><td><b>' + r.c + '</b></td><td class="num">#' + cell(r.rank, r.w) +
+        '</td><td class="num" style="color:' + col + '">' + r.vs + '</td></tr>';
+    }).join("");
+
+    document.getElementById("vs-rows").innerHTML = VOLUME_SHARE.map(function (r) {
+      return '<tr' + (r.w ? ' style="background:var(--warn-soft)"' : '') + '><td><b>' + r.c + '</b></td><td class="num">' + cell(r.pct.toFixed(1) + "%", r.w) +
+        '</td><td class="num">' + r.total.toLocaleString("en-US") + '</td></tr>';
+    }).join("");
+  }
+
+  function updateReviewBadge() {
+    var b = document.getElementById("review-count");
+    b.textContent = pending ? "1" : "0";
+    b.style.display = pending ? "" : "none";
+  }
+
+  function approve() {
+    if (!pending) return;
+    history.push({ week: pending.week, rows: pending.rows, imported: "Jul 7 · 8:02a", price: 20.90 });
+    pending = null;
+    renderBatches();
+    renderReview();
+    updateReviewBadge();
+    renderHistory();
+    renderAnalytics();
+    FS.toast("Saved 47 rows to database");
+    document.querySelector('.tab[data-panel="p-history"]').click();
+  }
+  function discard() {
+    if (!pending) return;
+    pending = null;
+    renderBatches();
+    renderReview();
+    updateReviewBadge();
+    FS.toast("Extraction discarded");
+    document.querySelector('.tab[data-panel="p-extract"]').click();
+  }
+
+  // ---------- History tab ----------
+  function renderHistory() {
+    var rows = history.slice().reverse();
+    document.getElementById("history-rows").innerHTML = rows.map(function (b) {
+      return '<tr><td><b>' + FS.esc(b.week) + '</b></td><td class="num">' + b.rows + '</td><td class="small muted">' + FS.esc(b.imported) +
+        '</td><td><span class="badge ok"><span class="dot ok"></span> Imported</span></td>' +
+        '<td class="num"><button class="btn btn-ghost btn-sm" data-pdf="' + FS.esc(b.week) + '">view PDF</button></td></tr>';
+    }).join("");
+  }
+
+  // ---------- Analytics tab ----------
+  function renderAnalytics() {
+    document.getElementById("st-weeks").textContent = history.length;
+    document.getElementById("st-rows").textContent = (history.length * 47).toLocaleString("en-US");
+    document.getElementById("st-comm").textContent = COMMODITIES.length;
+
+    // Avg price trend = last 6 approved weeks (Romaine benchmark)
+    var last6 = history.slice(-6);
+    var prices = last6.map(function (b) { return b.price; });
+    var max = Math.max.apply(null, prices);
+    document.getElementById("trend-comm").textContent = last6.length + " wks";
+    document.getElementById("trend-bars").innerHTML = last6.map(function (b) {
+      var lbl = b.week.replace(/,.*$/, "").replace(/^\w+ /, "").trim();
+      return '<div class="bar" style="height:' + (b.price / max * 100) + '%"><span>' + FS.esc(lbl) + '</span></div>';
+    }).join("");
+
+    // Volume share by commodity (latest approved week)
+    var maxs = Math.max.apply(null, LATEST_SHARE.map(function (x) { return x.pct; }));
+    document.getElementById("share-bars").innerHTML = LATEST_SHARE.map(function (x) {
+      return '<div class="bar" style="height:' + (x.pct / maxs * 100) + '%"><span>' + x.c.slice(0, 4) + '</span></div>';
+    }).join("");
+  }
+
+  // ---------- Wire up ----------
+  document.getElementById("upload-btn").addEventListener("click", runExtraction);
+  document.getElementById("dropzone").addEventListener("click", function (e) {
+    if (e.target.id === "dropzone") { /* click on the zone itself does nothing special */ }
+  });
+  document.getElementById("approve-btn").addEventListener("click", approve);
+  document.getElementById("discard-btn").addEventListener("click", discard);
+  document.addEventListener("click", function (e) {
+    var pdf = e.target.closest("[data-pdf]");
+    if (pdf) FS.toast("Opening PDF · " + pdf.getAttribute("data-pdf"));
+  });
+
+  window.resetDemo = function () {
+    seed();
+    document.getElementById("extract-progress").style.display = "none";
+    document.getElementById("progress-bar").style.width = "0%";
+    document.getElementById("upload-btn").disabled = false;
+    init();
+    document.querySelector('.tab[data-panel="p-extract"]').click();
+    FS.toast("Demo reset");
+  };
+
+  function init() {
+    renderBatches();
+    renderReview();
+    updateReviewBadge();
+    renderHistory();
+    renderAnalytics();
+  }
+
+  seed();
+  init();
+})();
+</script>
+</body>
+</html>

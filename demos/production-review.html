@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weekly Production Review (S&amp;OP) — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="ag">
+
+<div class="demo-banner">
+  <a href="../index.html#agriculture">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional company</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 3v18"/><path d="M12 8c-3.5 0-6-2-6-4 3.5 0 6 2 6 4z"/><path d="M12 12c3.5 0 6-2 6-4-3.5 0-6 2-6 4z"/><path d="M12 15c-3.5 0-6-2-6-4 3.5 0 6 2 6 4z"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Weekly Production Review · S&amp;OP</div>
+      <div class="app-header__sub">Northbay Produce Co. · <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● Synced from the ERP</span></div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <label class="small" style="color:rgba(255,255,255,.85)">Role</label>
+      <select id="role" class="inp" style="width:auto;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.28)">
+        <option value="viewer">Viewer</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Week selector: rolling 5-week window -->
+  <div class="card card-pad" style="margin-top:18px">
+    <div class="row wrap">
+      <div>
+        <h3 style="margin:0 0 2px">Production week</h3>
+        <p class="small muted" style="margin:0">Rolling 5-week window · current week highlighted</p>
+      </div>
+      <div class="spacer" id="week-tabs" style="display:inline-flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+  </div>
+
+  <!-- Overview strip -->
+  <div class="grid grid-3" style="margin-top:16px">
+    <div class="stat"><div class="label">Total planting (this week)</div><div class="value" id="ov-plant"></div><div class="delta up" id="ov-plantd"></div></div>
+    <div class="stat"><div class="label">Forecast vs demand</div><div class="value" id="ov-fvd"></div><div class="delta" id="ov-fvdd"></div></div>
+    <div class="stat"><div class="label">Commodities tracked</div><div class="value" id="ov-com"></div><div class="delta up">5 regions · 3 DCs</div></div>
+  </div>
+
+  <div class="row" style="margin:22px 0 4px">
+    <div class="section-title" style="margin:0">Commodity slides</div>
+    <span class="spacer small muted" id="ctx-week"></span>
+    <button class="btn btn-ghost btn-sm" id="print-view">🖨 Print view</button>
+  </div>
+
+  <!-- Commodity slides render here -->
+  <div id="slides"></div>
+
+  <!-- Notes for the current week -->
+  <div class="card card-pad" style="margin-top:20px" id="notes-card">
+    <div class="row wrap">
+      <div>
+        <h3 style="margin:0 0 2px">Weekly notes <span class="badge accent" id="notes-week"></span></h3>
+        <p class="small muted" style="margin:0" id="notes-role-hint"></p>
+      </div>
+      <span class="spacer badge" id="notes-lock"></span>
+    </div>
+    <div class="grid grid-3" style="margin-top:14px" id="notes-grid"></div>
+    <div class="row" style="margin-top:14px" id="notes-actions" hidden>
+      <button class="btn btn-primary btn-sm spacer" id="notes-save">Save notes</button>
+    </div>
+  </div>
+</div>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  // ---------- Seeded data (fictional) ----------
+  // Rolling 5-week window. Index 1 = "This week" (current, WTD).
+  var WEEKS = [
+    { key: "w-1", label: "Last week", short: "Wk 26", range: "Jun 22–28" },
+    { key: "w0",  label: "This week", short: "Wk 27", range: "Jun 29–Jul 5", current: true },
+    { key: "w1",  label: "Next",      short: "Wk 28", range: "Jul 6–12" },
+    { key: "w2",  label: "+2",        short: "Wk 29", range: "Jul 13–19" },
+    { key: "w3",  label: "+3",        short: "Wk 30", range: "Jul 20–26" }
+  ];
+
+  // Per commodity: 5-week arrays for Planting, Estimate, Actual, Demand (cases).
+  // Actual only populated through the current week (index 1 = WTD, index 2+ = null).
+  var COMMODITIES = [
+    {
+      name: "Broccoli", region: "Verde Valley · Northwest DC", grower: "Verde Valley",
+      plant: [42, 46, 44, 40, 45],
+      est:   [9800, 10400, 10100, 9600, 9900],
+      act:   [9620, 6180, null, null, null],
+      dem:   [9500, 10200, 10500, 9800, 9700]
+    },
+    {
+      name: "Cauliflower", region: "Sunridge · Midwest DC", grower: "Sunridge",
+      plant: [28, 30, 31, 29, 30],
+      est:   [6200, 6600, 6800, 6400, 6500],
+      act:   [6340, 3980, null, null, null],
+      dem:   [6100, 6900, 7100, 6600, 6300]
+    },
+    {
+      name: "Romaine", region: "Bluefield · Southeast DC", grower: "Bluefield",
+      plant: [55, 58, 56, 54, 57],
+      est:   [13200, 13800, 13500, 13000, 13400],
+      act:   [12960, 8240, null, null, null],
+      dem:   [13600, 14100, 13900, 13300, 13500]
+    },
+    {
+      name: "Artichoke", region: "Rio Vista · Northwest DC", grower: "Rio Vista",
+      plant: [12, 13, 14, 12, 13],
+      est:   [2400, 2600, 2700, 2500, 2550],
+      act:   [2280, 1520, null, null, null],
+      dem:   [2500, 2700, 2650, 2600, 2580]
+    },
+    {
+      name: "Celery", region: "Verde Valley · Midwest DC", grower: "Verde Valley",
+      plant: [38, 40, 39, 37, 41],
+      est:   [8600, 9000, 8800, 8400, 8900],
+      act:   [8710, 5460, null, null, null],
+      dem:   [8400, 8900, 9100, 8600, 8700]
+    }
+  ];
+
+  // Per-week notes (index-aligned to WEEKS). Editable in Admin.
+  var SEED_NOTES = {
+    "w-1": {
+      quality: "Broccoli crowns held size through the cool spell; minor tip-burn on Romaine at Bluefield, trimmed at pack. Artichoke bract quality strong.",
+      schedule: "Verde Valley advanced two Broccoli blocks by 3 days to catch the demand pull. Sunridge Cauliflower on plan.",
+      callouts: "Ridgeline Carriers held a reefer at Northwest DC — 4 hr delay, recovered same day. No fill impact."
+    },
+    "w0": {
+      quality: "Romaine running slightly ahead on maturity at Bluefield — pulling forward harvest crews Thu/Fri. Watch heat forecast mid-week for Celery at Verde Valley.",
+      schedule: "Planting on plan across all regions. Rio Vista Artichoke block 14 seeded Monday. Coastway Freight confirmed for the Wed pull.",
+      callouts: "Harborline Markets raised Romaine demand +4% for the promo window. Est held; covering from Southeast DC buffer."
+    },
+    "w1": {
+      quality: "",
+      schedule: "",
+      callouts: ""
+    },
+    "w2": {
+      quality: "",
+      schedule: "",
+      callouts: ""
+    },
+    "w3": {
+      quality: "",
+      schedule: "",
+      callouts: ""
+    }
+  };
+
+  var NOTE_FIELDS = [
+    { id: "quality",  label: "Quality & field notes" },
+    { id: "schedule", label: "Planting schedule" },
+    { id: "callouts", label: "Manual callouts" }
+  ];
+
+  // ---------- State ----------
+  var state = { role: "viewer", week: 1, notes: null };
+  function seedNotes() { return JSON.parse(JSON.stringify(SEED_NOTES)); }
+
+  var currentIdx = 1; // "This week" is always index 1 (the WTD column)
+  function nfmt(n) { return Number(n).toLocaleString("en-US"); }
+
+  // ---------- Week selector ----------
+  function renderWeekTabs() {
+    document.getElementById("week-tabs").innerHTML = WEEKS.map(function (w, i) {
+      var active = i === state.week;
+      var cls = "btn btn-sm " + (active ? "btn-primary" : "btn-ghost");
+      var cur = w.current ? ' <span class="badge accent" style="padding:0 .35rem">now</span>' : "";
+      return '<button class="' + cls + '" data-week="' + i + '" style="flex-direction:column;align-items:flex-start;line-height:1.15">' +
+        '<span style="font-weight:700">' + w.label + cur + '</span>' +
+        '<span style="font-size:.72rem;opacity:.8;font-weight:600">' + w.short + ' · ' + w.range + '</span>' +
+        '</button>';
+    }).join('');
+  }
+
+  // ---------- Overview strip ----------
+  function renderOverview() {
+    var wi = state.week;
+    var totalPlant = COMMODITIES.reduce(function (s, c) { return s + c.plant[wi]; }, 0);
+    var totalEst = COMMODITIES.reduce(function (s, c) { return s + c.est[wi]; }, 0);
+    var totalDem = COMMODITIES.reduce(function (s, c) { return s + c.dem[wi]; }, 0);
+    var gap = totalEst - totalDem;
+    var pct = (gap / totalDem * 100);
+
+    document.getElementById("ov-plant").textContent = nfmt(totalPlant) + " ac";
+    document.getElementById("ov-plantd").textContent = "across 5 commodities";
+
+    document.getElementById("ov-fvd").textContent = (gap >= 0 ? "+" : "") + nfmt(gap) + " cs";
+    var fvdd = document.getElementById("ov-fvdd");
+    fvdd.textContent = (pct >= 0 ? "▲ " : "▼ ") + Math.abs(pct).toFixed(1) + "% " + (gap >= 0 ? "surplus" : "short") + " vs demand";
+    fvdd.className = "delta " + (Math.abs(pct) <= 3 ? "up" : (gap < 0 ? "down" : "up"));
+
+    document.getElementById("ov-com").textContent = String(COMMODITIES.length);
+
+    var w = WEEKS[wi];
+    document.getElementById("ctx-week").textContent = w.label + " · " + w.short + " (" + w.range + ")";
+  }
+
+  // ---------- Commodity slides ----------
+  function varianceBadge(c) {
+    // Count how many of the 5 weeks have a populated Actual (i.e., realized).
+    var actCount = c.act.filter(function (v) { return v !== null; }).length;
+    // Estimate exists for all 5; report coverage as "actual vs full window".
+    if (actCount < WEEKS.length) {
+      return '<span class="badge warn">Est only ' + actCount + ' of ' + WEEKS.length + ' wks realized</span>';
+    }
+    return '<span class="badge ok">Full window realized</span>';
+  }
+
+  function slideTable(c) {
+    var head = '<tr><th>Metric</th>' + WEEKS.map(function (w, i) {
+      var mark = i === currentIdx ? ' <span class="badge accent" style="padding:0 .3rem">WTD</span>' : '';
+      return '<th class="num">' + w.short + '<div style="font-weight:500;text-transform:none;letter-spacing:0;font-size:.68rem;color:var(--d-muted)">' + w.label + '</div></th>';
+    }).join('') + '</tr>';
+
+    function row(name, arr, opts) {
+      opts = opts || {};
+      var cells = arr.map(function (v, i) {
+        var badge = (opts.wtdRow && i === currentIdx) ? ' <span class="badge accent" style="padding:0 .3rem">WTD</span>' : '';
+        var content;
+        if (v === null || v === undefined) {
+          content = '<span class="muted">—</span>';
+        } else {
+          content = nfmt(v) + badge;
+        }
+        var hi = i === state.week ? ' style="background:var(--accent-soft)"' : '';
+        return '<td class="num"' + hi + '>' + content + '</td>';
+      }).join('');
+      return '<tr><td><b>' + name + '</b>' + (opts.unit ? ' <span class="small muted">' + opts.unit + '</span>' : '') + '</td>' + cells + '</tr>';
+    }
+
+    return '<div class="table-wrap" style="box-shadow:none;border:1px solid var(--d-border)">' +
+      '<table class="t"><thead>' + head + '</thead><tbody>' +
+      row("Planting", c.plant, { unit: "ac" }) +
+      row("Estimate", c.est, { unit: "cs" }) +
+      row("Actual", c.act, { unit: "cs", wtdRow: true }) +
+      row("Demand", c.dem, { unit: "cs" }) +
+      '</tbody></table></div>';
+  }
+
+  function miniBars(c) {
+    // Estimate vs Demand across the 5 weeks. Est = solid accent, Dem = alt (soft).
+    var all = c.est.concat(c.dem);
+    var max = Math.max.apply(null, all);
+    var groups = WEEKS.map(function (w, i) {
+      var eH = (c.est[i] / max * 100);
+      var dH = (c.dem[i] / max * 100);
+      var isCur = i === state.week;
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">' +
+        '<div style="display:flex;align-items:flex-end;gap:4px;height:120px;width:100%;justify-content:center">' +
+          '<div class="bar" title="Estimate ' + nfmt(c.est[i]) + ' cs" style="width:40%;height:' + eH + '%;' + (isCur ? '' : 'opacity:.85') + '"></div>' +
+          '<div class="bar alt" title="Demand ' + nfmt(c.dem[i]) + ' cs" style="width:40%;height:' + dH + '%"></div>' +
+        '</div>' +
+        '<div style="font-size:.7rem;color:var(--d-muted);' + (isCur ? 'font-weight:700;color:var(--accent-deep)' : '') + '">' + w.short + '</div>' +
+      '</div>';
+    }).join('');
+    return '<div style="display:flex;gap:10px;align-items:flex-end">' + groups + '</div>' +
+      '<div class="bar-legend" style="margin-top:12px">' +
+        '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;background:var(--accent);display:inline-block"></span> Estimate</span>' +
+        '<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;background:var(--accent-soft);border:1px solid var(--accent);display:inline-block"></span> Demand</span>' +
+      '</div>';
+  }
+
+  function renderSlides() {
+    document.getElementById("slides").innerHTML = COMMODITIES.map(function (c) {
+      var wi = state.week;
+      var wkGap = c.est[wi] - c.dem[wi];
+      var wkPct = (wkGap / c.dem[wi] * 100);
+      var gapBadge = Math.abs(wkPct) <= 3
+        ? '<span class="badge ok">On plan · ' + (wkGap >= 0 ? '+' : '') + wkPct.toFixed(1) + '%</span>'
+        : (wkGap < 0
+            ? '<span class="badge bad">Short ' + wkPct.toFixed(1) + '% vs demand</span>'
+            : '<span class="badge info">+' + wkPct.toFixed(1) + '% vs demand</span>');
+
+      return '<div class="card card-pad" style="margin-bottom:16px">' +
+        '<div class="row wrap" style="margin-bottom:12px">' +
+          '<div>' +
+            '<h3 style="margin:0 0 2px">' + c.name + '</h3>' +
+            '<div class="small muted">' + c.region + '</div>' +
+          '</div>' +
+          '<div class="spacer" style="display:inline-flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+            gapBadge + varianceBadge(c) +
+          '</div>' +
+        '</div>' +
+        '<div class="grid grid-2" style="align-items:start">' +
+          '<div>' + slideTable(c) + '</div>' +
+          '<div class="card" style="box-shadow:none;background:var(--d-surface-2);padding:16px">' +
+            '<div class="small muted" style="font-weight:650;margin-bottom:10px">Estimate vs Demand · 5-week</div>' +
+            miniBars(c) +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ---------- Notes ----------
+  function renderNotes() {
+    var wk = WEEKS[state.week];
+    var key = wk.key;
+    var isAdmin = state.role === "admin";
+    var isCurrent = state.week === currentIdx;
+    var n = state.notes[key];
+
+    document.getElementById("notes-week").textContent = wk.short + " · " + wk.range;
+
+    var lock = document.getElementById("notes-lock");
+    if (isAdmin) {
+      lock.className = "spacer badge ok";
+      lock.textContent = "● Editable";
+    } else {
+      lock.className = "spacer badge muted";
+      lock.textContent = "🔒 Read-only";
+    }
+
+    document.getElementById("notes-role-hint").textContent = isAdmin
+      ? "Admin role — edit the three fields and save. Changes persist until reset."
+      : "Viewer role — notes are read-only. Switch to Admin to edit.";
+
+    document.getElementById("notes-grid").innerHTML = NOTE_FIELDS.map(function (f) {
+      var val = n[f.id] || "";
+      if (isAdmin) {
+        return '<div class="field" style="margin:0">' +
+          '<label class="lbl">' + f.label + '</label>' +
+          '<textarea class="inp" data-note="' + f.id + '" rows="5" placeholder="Add ' + f.label.toLowerCase() + '…">' + FS.esc(val) + '</textarea>' +
+        '</div>';
+      }
+      var body = val
+        ? '<p class="small" style="margin:0;color:var(--d-text)">' + FS.esc(val) + '</p>'
+        : '<p class="small muted" style="margin:0;font-style:italic">No ' + f.label.toLowerCase() + ' recorded for this week.</p>';
+      return '<div>' +
+        '<div class="lbl">' + f.label + '</div>' +
+        '<div class="card" style="box-shadow:none;background:var(--d-surface-2);padding:12px;min-height:96px">' + body + '</div>' +
+      '</div>';
+    }).join('');
+
+    document.getElementById("notes-actions").hidden = !isAdmin;
+  }
+
+  function saveNotes() {
+    var key = WEEKS[state.week].key;
+    document.querySelectorAll("[data-note]").forEach(function (ta) {
+      state.notes[key][ta.getAttribute("data-note")] = ta.value;
+    });
+    FS.toast("Notes saved");
+  }
+
+  // ---------- Wire up ----------
+  document.getElementById("role").addEventListener("change", function (e) {
+    state.role = e.target.value;
+    renderNotes();
+  });
+
+  document.getElementById("week-tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-week]");
+    if (!b) return;
+    // Save in-flight edits before switching weeks (Admin only).
+    if (state.role === "admin") {
+      var key = WEEKS[state.week].key;
+      document.querySelectorAll("[data-note]").forEach(function (ta) {
+        state.notes[key][ta.getAttribute("data-note")] = ta.value;
+      });
+    }
+    state.week = +b.getAttribute("data-week");
+    renderAll();
+  });
+
+  document.getElementById("notes-save").addEventListener("click", saveNotes);
+  document.getElementById("print-view").addEventListener("click", function () {
+    FS.toast("Print view — a clean, paginated PDF of this week's review");
+  });
+
+  function renderAll() {
+    renderWeekTabs();
+    renderOverview();
+    renderSlides();
+    renderNotes();
+  }
+
+  window.resetDemo = function () {
+    state = { role: "viewer", week: currentIdx, notes: seedNotes() };
+    document.getElementById("role").value = "viewer";
+    renderAll();
+    FS.toast("Demo reset");
+  };
+
+  function init() {
+    state.notes = seedNotes();
+    state.week = currentIdx;
+    renderAll();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

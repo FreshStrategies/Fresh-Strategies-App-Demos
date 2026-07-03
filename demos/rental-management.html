@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="_shared/demo.css" />
-<style>.res-filter.active{ background:var(--accent); color:#fff; border-color:var(--accent); }</style>
+<style>.res-filter.active,.ppl-filter.active{ background:var(--accent); color:#fff; border-color:var(--accent); }</style>
 </head>
 <body data-sector="rental">
 
@@ -35,8 +35,10 @@
       <button class="tab active" data-panel="p-dash">Dashboard</button>
       <button class="tab" data-panel="p-props">Properties</button>
       <button class="tab" data-panel="p-res">Reservations <span class="badge-num" id="res-count"></span></button>
+      <button class="tab" data-panel="p-req">Requests <span class="badge-num" id="req-count"></span></button>
       <button class="tab" data-panel="p-turn">Turnovers <span class="badge-num" id="turn-count"></span></button>
       <button class="tab" data-panel="p-rev">Revenue</button>
+      <button class="tab" data-panel="p-people">People</button>
     </div>
 
     <!-- DASHBOARD -->
@@ -90,6 +92,12 @@
       </div>
     </section>
 
+    <!-- REQUESTS -->
+    <section class="panel" id="p-req">
+      <p class="small muted">Members and guests request stays here. Approve to create a confirmed reservation — with an automatic conflict check — or decline with a reason. <b>Family</b> stays get the member rate; <b>guests</b> pay standard.</p>
+      <div id="req-list"></div>
+    </section>
+
     <!-- TURNOVERS -->
     <section class="panel" id="p-turn">
       <p class="small muted">Each checkout creates a turnover. Move a unit from <b>To clean</b> → <b>Cleaning</b> → <b>Guest‑ready</b>. A unit can’t take its next guest until it’s ready.</p>
@@ -117,6 +125,22 @@
           </table>
         </div>
       </div>
+    </section>
+
+    <!-- PEOPLE -->
+    <section class="panel" id="p-people">
+      <div class="card card-pad" style="margin-bottom:14px"><div class="row wrap">
+        <strong class="small">Roster</strong>
+        <button class="btn btn-ghost btn-sm ppl-filter active" data-ptype="all">All</button>
+        <button class="btn btn-ghost btn-sm ppl-filter" data-ptype="Family">Family</button>
+        <button class="btn btn-ghost btn-sm ppl-filter" data-ptype="Guest">Guest</button>
+        <span class="spacer"></span>
+        <button class="btn btn-ghost btn-sm" data-addperson>+ Add person</button>
+      </div></div>
+      <div class="table-wrap"><table class="t">
+        <thead><tr><th>Name</th><th>Type</th><th>Household</th><th>Email</th><th class="num">Stays</th></tr></thead>
+        <tbody id="ppl-rows"></tbody>
+      </table></div>
     </section>
   </div>
 </div>
@@ -172,7 +196,7 @@
   var REV_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
   var REV_VALS = [9800, 11200, 14600, 18900, 21400, 23710];
 
-  function reset() { reservations = seedRes(); turnovers = seedTurn(); resFilter = "all"; renderAll(); }
+  function reset() { reservations = seedRes(); turnovers = seedTurn(); requests = seedReq(); people = seedPeople(); resFilter = "all"; pplFilter = "all"; renderAll(); }
 
   // ---------- Renderers ----------
   function badge(s) { return '<span class="badge ' + STATUS[s].c + '">' + STATUS[s].l + '</span>'; }
@@ -213,6 +237,7 @@
     if (dirty) alerts.push('<div class="list-item" style="cursor:default"><div class="ic" style="background:var(--bad-soft);color:var(--bad)">⚑</div><div class="grow"><div class="ti">' + dirty + ' turnover' + (dirty > 1 ? "s" : "") + ' not guest‑ready</div><div class="su">See the Turnovers board</div></div></div>');
     var maint = PROPS.filter(function (p) { return p.status === "Maintenance"; });
     maint.forEach(function (p) { alerts.push('<div class="list-item" style="cursor:default"><div class="ic" style="background:var(--d-surface-2)">🛠</div><div class="grow"><div class="ti">' + p.name + ' in maintenance</div><div class="su">Blocked from new bookings</div></div></div>'); });
+    if (requests && requests.length) alerts.unshift('<div class="list-item" style="cursor:default"><div class="ic" style="background:var(--accent-soft);color:var(--accent-deep)">✉</div><div class="grow"><div class="ti">' + requests.length + ' stay request' + (requests.length > 1 ? "s" : "") + ' to review</div><div class="su">Open the Requests tab</div></div></div>');
     document.getElementById("dash-alerts").innerHTML = alerts.join("") || '<p class="muted small">All clear.</p>';
   }
 
@@ -273,7 +298,7 @@
     }).join("") + '<tr style="font-weight:700;background:var(--d-surface-2)"><td>Total</td><td class="num">' + totalNights + '</td><td class="num">' + money(totalRev) + '</td></tr>';
   }
 
-  function renderAll() { renderKPIs(); renderDash(); renderProps(); renderRes(); renderTurn(); renderRev(); }
+  function renderAll() { renderKPIs(); renderDash(); renderProps(); renderRes(); renderReq(); renderTurn(); renderRev(); renderPeople(); }
 
   // ---------- Drawers ----------
   function openRes(id) {
@@ -344,6 +369,88 @@
       renderRes(); return;
     }
     if (e.target.closest("[data-newbooking]")) { FS.toast("New‑booking form would open here"); }
+  });
+
+  // ---------- Requests & People (enrichment) ----------
+  var people, requests, pplFilter = "all";
+
+  function memberRate(p) { return Math.round(p.rate * 0.85); }     // family/member discount
+  function cleanFee(p) { return p.rate > 300 ? 125 : (p.rate > 200 ? 95 : 70); }
+  function dayNum(s) { var m = /(\d+)/.exec(s); return m ? parseInt(m[1], 10) : 0; }
+  function hasConflict(propId, cin, cout) {
+    var s = dayNum(cin), e = dayNum(cout);
+    return reservations.some(function (r) {
+      if (r.prop !== propId || r.status === "CANCELLED" || r.status === "CHECKED_OUT") return false;
+      return s < dayNum(r.cout) && e > dayNum(r.cin);
+    });
+  }
+
+  function seedPeople() {
+    return [
+      { name: "The Bennett household", type: "Family", household: "Bennett", email: "bennett.family@example.com", stays: 6 },
+      { name: "Maria Alvarez", type: "Family", household: "Alvarez", email: "m.alvarez@example.com", stays: 3 },
+      { name: "The Okafor household", type: "Family", household: "Okafor", email: "okafor@example.com", stays: 2 },
+      { name: "R. Patel", type: "Guest", household: "—", email: "r.patel@example.com", stays: 2 },
+      { name: "S. Tran", type: "Guest", household: "—", email: "s.tran@example.com", stays: 1 },
+      { name: "D. Murphy", type: "Guest", household: "—", email: "d.murphy@example.com", stays: 1 }
+    ];
+  }
+  function seedReq() {
+    return [
+      { id: "RQ‑88", prop: "SEA", guest: "Maria Alvarez", type: "Family", party: 4, cin: "Jun 24", cout: "Jun 28", nights: 4, note: "Kids’ summer week." },
+      { id: "RQ‑89", prop: "PEL", guest: "The Bennett household", type: "Family", party: 6, cin: "Jun 14", cout: "Jun 18", nights: 4, note: "Requested dates overlap an existing stay." },
+      { id: "RQ‑90", prop: "DUN", guest: "L. Ferreira", type: "Guest", party: 2, cin: "Jun 27", cout: "Jun 30", nights: 3, note: "Found us through a friend." }
+    ];
+  }
+
+  function renderReq() {
+    var el = document.getElementById("req-list");
+    var badgeNum = document.getElementById("req-count");
+    if (!requests.length) { el.innerHTML = '<p class="muted small">No open requests. 🎉</p>'; badgeNum.textContent = ""; return; }
+    badgeNum.textContent = requests.length;
+    el.innerHTML = requests.map(function (q) {
+      var p = prop(q.prop), rate = q.type === "Family" ? memberRate(p) : p.rate, total = rate * q.nights + cleanFee(p);
+      var conflict = hasConflict(q.prop, q.cin, q.cout);
+      return '<div class="card card-pad" style="margin-bottom:10px"><div class="row wrap">' +
+        '<span class="avatar" style="background:var(--accent-soft);color:var(--accent-deep)">' + FS.initials(q.guest) + '</span>' +
+        '<div class="grow"><div class="ti"><b>' + FS.esc(q.guest) + '</b> · ' + p.name + '</div>' +
+        '<div class="su small muted">' + q.cin + ' → ' + q.cout + ' · ' + q.nights + ' nts · ' + q.party + ' guests</div></div>' +
+        '<span class="badge ' + (q.type === "Family" ? "accent" : "muted") + '">' + q.type + ' rate · ' + money(rate) + '/nt</span>' +
+        '<span class="badge info">' + money(total) + ' est.</span></div>' +
+        (conflict ? '<div class="badge bad" style="margin-top:10px">⚠ Date conflict with an existing stay at ' + p.name + '</div>' : '') +
+        (q.note ? '<p class="small muted" style="margin:8px 0 0">' + FS.esc(q.note) + '</p>' : '') +
+        '<div class="row" style="margin-top:10px"><button class="btn btn-primary btn-sm" data-reqok="' + q.id + '">Approve →</button>' +
+        '<button class="btn btn-ghost btn-sm" data-reqno="' + q.id + '">Decline</button></div></div>';
+    }).join("");
+  }
+
+  function renderPeople() {
+    var rows = people.filter(function (x) { return pplFilter === "all" || x.type === pplFilter; });
+    document.getElementById("ppl-rows").innerHTML = rows.map(function (x) {
+      return '<tr><td><b>' + FS.esc(x.name) + '</b></td><td><span class="badge ' + (x.type === "Family" ? "accent" : "muted") + '">' + x.type + '</span></td><td>' + FS.esc(x.household) + '</td><td class="muted">' + FS.esc(x.email) + '</td><td class="num">' + x.stays + '</td></tr>';
+    }).join("") || '<tr><td colspan="5" class="muted" style="text-align:center">No people in this view.</td></tr>';
+  }
+
+  function approveReq(id) {
+    var q = requests.find(function (x) { return x.id === id; }); if (!q) return;
+    if (hasConflict(q.prop, q.cin, q.cout)) { FS.toast("Can’t approve — dates conflict with an existing stay"); return; }
+    var p = prop(q.prop), rate = q.type === "Family" ? memberRate(p) : p.rate, clean = cleanFee(p);
+    var nid = "BR‑" + (1049 + reservations.length);
+    reservations.unshift({ id: nid, prop: q.prop, guest: q.guest, party: q.party, cin: q.cin, cout: q.cout, nights: q.nights, total: rate * q.nights + clean, clean: clean, status: "CONFIRMED", notes: (q.type === "Family" ? "Family/member rate. " : "") + (q.note || "") });
+    requests = requests.filter(function (x) { return x.id !== id; });
+    FS.toast("Approved · " + nid + " confirmed"); renderAll();
+  }
+  function declineReq(id) {
+    var q = requests.find(function (x) { return x.id === id; }); if (!q) return;
+    requests = requests.filter(function (x) { return x.id !== id; });
+    FS.toast(q.id + " declined"); renderReq(); renderDash();
+  }
+
+  document.addEventListener("click", function (e) {
+    var ok = e.target.closest("[data-reqok]"); if (ok) { approveReq(ok.getAttribute("data-reqok")); return; }
+    var no = e.target.closest("[data-reqno]"); if (no) { declineReq(no.getAttribute("data-reqno")); return; }
+    var pf = e.target.closest(".ppl-filter"); if (pf) { pplFilter = pf.getAttribute("data-ptype"); document.querySelectorAll(".ppl-filter").forEach(function (b) { b.classList.toggle("active", b === pf); }); renderPeople(); return; }
+    if (e.target.closest("[data-addperson]")) { people.unshift({ name: "New guest", type: "Guest", household: "—", email: "new.guest@example.com", stays: 0 }); FS.toast("Person added to roster"); renderPeople(); }
   });
 
   window.resetDemo = function () { reset(); FS.closeDrawer(); FS.toast("Demo reset"); };

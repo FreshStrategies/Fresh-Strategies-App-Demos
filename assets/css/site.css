@@ -32,6 +32,10 @@
   --sector-platform-soft: #EFEAF7;
   --sector-rental: #B85C2E;
   --sector-rental-soft: #F8ECE3;
+  --sector-logistics: #2F6E8F;
+  --sector-logistics-soft: #E4EEF3;
+  --sector-ai: #6D28D9;
+  --sector-ai-soft: #EDE7FB;
 
   /* System */
   --radius: 14px;
