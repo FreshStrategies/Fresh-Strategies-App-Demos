@@ -212,8 +212,8 @@
 (function () {
   var m = FS.money;
 
-  // ---------- Seed: 6 weeks of imported history, 5 commodities ----------
-  var COMMODITIES = ["Broccoli", "Cauliflower", "Romaine", "Iceberg", "Artichoke"];
+  // ---------- Seed: 6 weeks of imported history, 6 commodities ----------
+  var COMMODITIES = ["Broccoli", "Cauliflower", "Romaine", "Iceberg", "Apples", "Cherries"];
 
   var SEED_HISTORY = [
     { week: "May 24, 2026", rows: 47, imported: "May 26 · 8:12a", price: 18.40 },
@@ -234,21 +234,24 @@
     { c: "Cauliflower",     avg: 17.85, lo: 15.90, hi: 20.10, trend: "▲ up",   w: false },
     { c: "Romaine",         avg: 21.40, lo: 18.20, hi: 24.90, trend: "▼ down", w: true  },
     { c: "Iceberg",         avg: 13.60, lo: 11.80, hi: 15.40, trend: "→ flat", w: false },
-    { c: "Artichoke",       avg: 28.75, lo: 24.10, hi: 33.20, trend: "▲ up",   w: true  }
+    { c: "Apples",          avg: 24.50, lo: 21.00, hi: 28.20, trend: "▲ up",   w: false },
+    { c: "Cherries",        avg: 62.40, lo: 48.10, hi: 78.90, trend: "▲ up",   w: true  }
   ];
   var PRICE_RANK = [
     { c: "Broccoli",    rank: 2, vs: "+3.1%",  w: false },
     { c: "Cauliflower", rank: 1, vs: "+5.4%",  w: false },
     { c: "Romaine",     rank: 4, vs: "-1.8%",  w: true  },
     { c: "Iceberg",     rank: 3, vs: "+0.6%",  w: false },
-    { c: "Artichoke",   rank: 1, vs: "+7.2%",  w: false }
+    { c: "Apples",      rank: 2, vs: "+2.4%",  w: false },
+    { c: "Cherries",    rank: 1, vs: "+9.6%",  w: false }
   ];
   var VOLUME_SHARE = [
     { c: "Broccoli",    pct: 18.4, total: 42600, w: false },
     { c: "Cauliflower", pct: 22.1, total: 31200, w: false },
     { c: "Romaine",     pct: 14.7, total: 58900, w: false },
     { c: "Iceberg",     pct: 11.2, total: 61500, w: true  },
-    { c: "Artichoke",   pct: 26.8, total: 12400, w: false }
+    { c: "Apples",      pct: 16.9, total: 74800, w: false },
+    { c: "Cherries",    pct: 8.3,  total: 9600,  w: false }
   ];
 
   // Volume share for latest APPROVED week (drives analytics chart)
@@ -257,7 +260,8 @@
     { c: "Cauliflower", pct: 21.6 },
     { c: "Romaine", pct: 14.2 },
     { c: "Iceberg", pct: 10.8 },
-    { c: "Artichoke", pct: 25.9 }
+    { c: "Apples", pct: 16.4 },
+    { c: "Cherries", pct: 8.0 }
   ];
 
   // ---------- Mutable state ----------
