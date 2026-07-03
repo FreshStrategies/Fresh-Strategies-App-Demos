@@ -177,14 +177,15 @@
       chip: "What's our on-hand vs target by commodity?",
       keys: ["on-hand", "on hand", "target", "par", "commodity", "inventory", "stock"],
       tools: ["query(Inventory)", "query(Targets)"],
-      lead: "You're **short on three of five commodities**. Broccoli is the biggest gap at 260 cases below target; Celery and Romaine are comfortably over.",
+      lead: "You're **short on three of six commodities**. Broccoli is the biggest gap at 260 cases below target; Iceberg and Apples are comfortably over.",
       extra: function () {
         return tableHTML(["Commodity", "On-hand", "Target", "Δ"], [
           ["Broccoli", "1,240", "1,500", d("−260", down)],
-          ["Romaine", "980", "900", d("+80", up)],
           ["Cauliflower", "610", "800", d("−190", down)],
-          ["Celery", "1,420", "1,200", d("+220", up)],
-          ["Artichoke", "340", "500", d("−160", down)]
+          ["Romaine", "980", "900", d("+80", up)],
+          ["Iceberg", "1,420", "1,200", d("+220", up)],
+          ["Apples", "2,050", "1,800", d("+250", up)],
+          ["Cherries", "340", "500", d("−160", down)]
         ]);
       },
       follow: ["What needs my attention today?", "Top 5 growers by net this pool"]
@@ -212,7 +213,7 @@
         return tableHTML(["Load", "Commodity", "Waiting"], [
           ["LD-4471 → Harborline", "Broccoli", d("2h 40m", down)],
           ["LD-4472 → Northwest DC", "Romaine", d("2h 05m", down)],
-          ["LD-4475 → Sunridge", "Celery", "1h 10m"],
+          ["LD-4475 → Sunridge", "Cherries", "1h 10m"],
           ["LD-4478 → Midwest DC", "Cauliflower", "0h 35m"]
         ]);
       },
@@ -225,7 +226,7 @@
       lead: "Two lines are below reorder point. **Waxed broccoli cartons** are the tightest — about 1.5 days of cover at the current run rate.",
       extra: function () {
         return barsHTML([
-          { l: "Broc ctn", v: 15 }, { l: "Rom ctn", v: 28 }, { l: "Celery", v: 62 }, { l: "Artichoke", v: 45 }, { l: "Master", v: 80 }
+          { l: "Broc ctn", v: 15 }, { l: "Rom ctn", v: 28 }, { l: "Apple box", v: 62 }, { l: "Cherry lug", v: 45 }, { l: "Master", v: 80 }
         ], "Bars show days of cover. Anything under ~2 days needs a reorder today.");
       },
       follow: ["What needs my attention today?"]
@@ -234,7 +235,7 @@
       chip: "How's revenue trending?",
       keys: ["revenue", "sales trend", "trending", "how's revenue", "how is revenue", "top line"],
       tools: ["query(Orders)", "run_calculation(weekly_revenue)"],
-      lead: "Revenue is **up 11% over the last six weeks**, led by artichoke and celery. Last week dipped slightly on the Harborline romaine slowdown.",
+      lead: "Revenue is **up 11% over the last six weeks**, led by cherries and apples. Last week dipped slightly on the Harborline romaine slowdown.",
       extra: function () {
         return barsHTML([
           { l: "wk1", v: 182 }, { l: "wk2", v: 196 }, { l: "wk3", v: 205 }, { l: "wk4", v: 219 }, { l: "wk5", v: 231 }, { l: "wk6", v: 224 }
@@ -249,7 +250,7 @@
       chip: "Top 5 growers by net this pool",
       keys: ["grower", "top 5", "top five", "net", "pool", "settlement"],
       tools: ["query(Pools)", "run_calculation(grower_net)"],
-      lead: "For the current settlement pool, **Verde Valley** leads on net return, driven by strong broccoli and celery blocks.",
+      lead: "For the current settlement pool, **Verde Valley** leads on net return, driven by strong broccoli and cherry blocks.",
       extra: function () {
         return tableHTML(["Grower", "Cases", "Net"], [
           ["Verde Valley", "18,400", m0(212400)],
@@ -295,7 +296,7 @@
       } else { setTimeout(cb, 260); }
     })();
   }
-  function boldify(s) { return '<p>' + s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>") + '</p>'; }
+  function boldify(s) { return s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>"); }
   function streamInto(pEl, plain, finalHTML, cb) {
     var words = plain.split(" "), i = 0;
     pEl.innerHTML = '<span class="txt"></span><span class="caret"></span>';
