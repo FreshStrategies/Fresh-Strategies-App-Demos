@@ -27,7 +27,8 @@
     trace: '<circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M8.4 6H15a3 3 0 013 3 3 3 0 01-3 3H9a3 3 0 00-3 3 3 3 0 003 3h6.6"/>',
     chat: '<path d="M4 5h16v11H8l-4 4z"/><path d="M8 9.5h8M8 12.5h5"/>',
     box: '<path d="M3 8l9-4 9 4v8l-9 4-9-4z"/><path d="M3 8l9 4 9-4M12 12v8"/>',
-    doc: '<path d="M6 2h8l5 5v15H6z"/><path d="M14 2v6h5"/><path d="M9 13h6M9 17h5"/>'
+    doc: '<path d="M6 2h8l5 5v15H6z"/><path d="M14 2v6h5"/><path d="M9 13h6M9 17h5"/>',
+    ship: '<path d="M2 19c2 1.3 4 1.3 6 0s4-1.3 6 0 4 1.3 6 0"/><path d="M5 16l-1-6h16l-1 6"/><path d="M8 10V5h8v5"/>'
   };
   function icon(name, cls) {
     return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[name] || '') + '</svg>';

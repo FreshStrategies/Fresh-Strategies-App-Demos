@@ -50,6 +50,13 @@ window.FS_APPS = [
     solve: "A single interface to build ad groups per customer and campaign, add product lines with quantity and price, then sort, filter, and export clean CSV and PDF summaries for stakeholders.",
     tags: ["React", "CSV / PDF export", "Filtering", "Audit fields"]
   },
+  {
+    sector: "ag", slug: "export-tracking", title: "Export Order Tracking",
+    icon: "ship",
+    need: "Export coordinators juggled multi‑variety shipment orders in spreadsheets — each row buried the variety inside a line‑item list, making it impossible to filter or sort by what was actually being shipped.",
+    solve: "One export, one variety. The variety is the order — surfaced at the top of every row so coordinators can filter by crop and variety instantly, track status from open to delivered, and manage buyers and destinations from a single clean list.",
+    tags: [".NET / Razor", "Variety‑first", "Status workflow", "Filtering", "Export mgmt"]
+  },
 
   // ---------------- Electrical ----------------
   {

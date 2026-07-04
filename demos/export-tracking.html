@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Export Order Tracking — Fresh Strategies demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="_shared/demo.css" />
+</head>
+<body data-sector="ag">
+
+<div class="demo-banner">
+  <a href="../index.html#agriculture">← Back to showcase</a>
+  <span class="seeded"><span class="pulse"></span> Demo data · fictional company</span>
+  <button class="reset" data-reset>↺ Reset</button>
+</div>
+
+<div class="app">
+  <header class="app-header">
+    <div class="app-header__logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M22 12H2"/><path d="M12 2l10 10-10 10"/><path d="M2 17V7l5-5h10l5 5v10l-5 5H7z"/></svg>
+    </div>
+    <div>
+      <div class="app-header__title">Export Order Tracking</div>
+      <div class="app-header__sub">Northbay Produce Co. · <span class="badge ok" style="background:rgba(255,255,255,.18);color:#fff">● One variety per export</span></div>
+    </div>
+    <div class="app-header__spacer"></div>
+    <div class="switcher">
+      <div class="avatar">MG</div>
+      <span class="small" style="color:rgba(255,255,255,.85)">Maria Gutierrez</span>
+    </div>
+  </header>
+
+  <!-- STAT TILES -->
+  <div class="grid grid-4" style="margin-top:18px">
+    <div class="stat"><div class="label">Open exports</div><div class="value" id="kpi-open"></div><div class="delta up" id="kpi-open-d"></div></div>
+    <div class="stat"><div class="label">Cartons booked</div><div class="value" id="kpi-cartons"></div></div>
+    <div class="stat"><div class="label">Destinations</div><div class="value" id="kpi-dest"></div></div>
+    <div class="stat"><div class="label">Est. export value</div><div class="value" id="kpi-value"></div></div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="card card-pad" style="margin-top:16px">
+    <div class="row wrap">
+      <input class="inp" id="f-text" placeholder="🔍 Filter export #, variety, buyer…" style="width:auto;flex:1;min-width:200px" />
+      <select class="inp" id="f-status" style="width:auto">
+        <option value="">All statuses</option>
+        <option value="Open">Open</option>
+        <option value="Booked">Booked</option>
+        <option value="Shipped">Shipped</option>
+        <option value="Delivered">Delivered</option>
+      </select>
+      <select class="inp" id="f-crop" style="width:auto">
+        <option value="">All crops</option>
+      </select>
+      <select class="inp" id="f-dest" style="width:auto">
+        <option value="">All destinations</option>
+      </select>
+      <span class="spacer"></span>
+      <button class="btn btn-primary btn-sm" id="new-exp">+ New export</button>
+    </div>
+  </div>
+
+  <!-- MAIN TABLE -->
+  <div class="table-wrap" style="margin-top:16px">
+    <table class="t" id="exp-table">
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Export #</th>
+          <th>Variety</th>
+          <th>Buyer</th>
+          <th>Destination</th>
+          <th>Ship Date</th>
+          <th class="num">Cartons</th>
+          <th class="num">Est. Value</th>
+        </tr>
+      </thead>
+      <tbody id="exp-rows"></tbody>
+    </table>
+  </div>
+  <p class="small muted" id="exp-empty" style="display:none;text-align:center;padding:24px">No exports match these filters.</p>
+</div>
+
+<!-- DRAWERS -->
+<div class="drawer-back" id="drawer-back"></div>
+
+<!-- Detail drawer -->
+<aside class="drawer" id="detail-drawer">
+  <div class="drawer__head"><h3 style="margin:0" id="dd-title">Export</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body" id="dd-body"></div>
+</aside>
+
+<!-- Create drawer -->
+<aside class="drawer" id="create-drawer">
+  <div class="drawer__head"><h3 style="margin:0">New export order</h3><button class="x" data-drawer-close>×</button></div>
+  <div class="drawer__body">
+    <div class="grid grid-2">
+      <div class="field">
+        <label class="lbl">Crop</label>
+        <select class="inp" id="c-crop" id="c-crop"></select>
+      </div>
+      <div class="field">
+        <label class="lbl">Variety</label>
+        <select class="inp" id="c-variety"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="lbl">Buyer</label>
+      <select class="inp" id="c-buyer"></select>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label class="lbl">Destination</label>
+        <select class="inp" id="c-dest"></select>
+      </div>
+      <div class="field">
+        <label class="lbl">Status</label>
+        <select class="inp" id="c-status"><option>Open</option><option>Booked</option><option>Shipped</option><option>Delivered</option></select>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label class="lbl">Ship date</label>
+        <input class="inp" id="c-ship" type="date" />
+      </div>
+      <div class="field">
+        <label class="lbl">Cartons</label>
+        <input class="inp num" id="c-cartons" type="number" min="1" value="480" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="lbl">Unit price ($/carton)</label>
+      <input class="inp num" id="c-price" type="number" min="0" step="0.01" value="22.00" />
+    </div>
+    <div class="row" style="margin-top:18px">
+      <button class="btn btn-ghost" data-drawer-close>Cancel</button>
+      <button class="btn btn-primary spacer" id="c-save">Save export</button>
+    </div>
+  </div>
+</aside>
+
+<script src="_shared/demo.js"></script>
+<script>
+(function () {
+  var m = FS.money, m0 = FS.money0, esc = FS.esc;
+
+  // ---------- Reference data ----------
+  var CROP_VARIETIES = {
+    "Romaine":   ["Coastal Green", "Desert Heart", "Valmaine"],
+    "Broccoli":  ["Emerald Crown", "Marathon", "Belstar"],
+    "Iceberg":   ["Crisphead 7", "Salinas", "Ithaca"],
+    "Celery":    ["Tall Utah", "Golden Pascal"],
+    "Artichoke": ["Imperial Star", "Green Globe"],
+    "Spinach":   ["Bloomsdale XL", "Tyee"]
+  };
+  var CROPS = Object.keys(CROP_VARIETIES);
+
+  var BUYERS = [
+    "Tokyo Fresh Markets", "Pacific Rim Distributors", "Maple Leaf Foods",
+    "UK Fresh Ltd", "Eurofresco GmbH", "Seoul Produce Co.", "Aussie Greens Pty"
+  ];
+
+  var DESTINATIONS = ["Japan", "Canada", "United Kingdom", "Germany", "South Korea", "Australia", "Mexico"];
+
+  // ---------- Seed data (fictional) ----------
+  var SEED = [
+    { id: "EX-2401", status: "Shipped",   crop: "Romaine",   variety: "Coastal Green",  buyer: "Tokyo Fresh Markets",      dest: "Japan",          ship: "2026-06-18", cartons: 1200, price: 26.50 },
+    { id: "EX-2402", status: "Delivered", crop: "Broccoli",  variety: "Emerald Crown",  buyer: "Pacific Rim Distributors", dest: "Japan",          ship: "2026-06-10", cartons:  840, price: 31.00 },
+    { id: "EX-2403", status: "Booked",    crop: "Iceberg",   variety: "Crisphead 7",    buyer: "Maple Leaf Foods",         dest: "Canada",         ship: "2026-07-08", cartons: 1600, price: 19.75 },
+    { id: "EX-2404", status: "Open",      crop: "Celery",    variety: "Tall Utah",      buyer: "UK Fresh Ltd",             dest: "United Kingdom", ship: "2026-07-20", cartons:  720, price: 24.00 },
+    { id: "EX-2405", status: "Booked",    crop: "Romaine",   variety: "Desert Heart",   buyer: "Eurofresco GmbH",          dest: "Germany",        ship: "2026-07-12", cartons:  960, price: 27.80 },
+    { id: "EX-2406", status: "Open",      crop: "Artichoke", variety: "Imperial Star",  buyer: "Seoul Produce Co.",        dest: "South Korea",    ship: "2026-07-25", cartons:  480, price: 44.50 },
+    { id: "EX-2407", status: "Shipped",   crop: "Spinach",   variety: "Bloomsdale XL",  buyer: "Aussie Greens Pty",        dest: "Australia",      ship: "2026-06-22", cartons:  600, price: 28.00 },
+    { id: "EX-2408", status: "Open",      crop: "Broccoli",  variety: "Marathon",       buyer: "Tokyo Fresh Markets",      dest: "Japan",          ship: "2026-07-30", cartons: 1080, price: 32.50 },
+    { id: "EX-2409", status: "Booked",    crop: "Iceberg",   variety: "Salinas",        buyer: "Maple Leaf Foods",         dest: "Canada",         ship: "2026-07-15", cartons:  800, price: 20.00 },
+    { id: "EX-2410", status: "Open",      crop: "Romaine",   variety: "Valmaine",       buyer: "Pacific Rim Distributors", dest: "Japan",          ship: "2026-08-05", cartons:  900, price: 25.50 }
+  ];
+
+  var data = [];
+  var nextNum = 2411;
+
+  function clone(seed) {
+    return seed.map(function (r) { return Object.assign({}, r); });
+  }
+
+  // ---------- Status styling ----------
+  var STATUS_BADGE = { Open: "info", Booked: "accent", Shipped: "warn", Delivered: "ok" };
+
+  function statusBadge(s) {
+    return '<span class="badge ' + (STATUS_BADGE[s] || "muted") + '">' + esc(s) + '</span>';
+  }
+
+  // ---------- Value helpers ----------
+  function exportValue(r) { return r.cartons * r.price; }
+  function fmtDate(d) {
+    var p = d.split("-");
+    var mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return mo[+p[1] - 1] + " " + (+p[2]) + ", " + p[0];
+  }
+
+  // ---------- KPIs ----------
+  function renderKPIs() {
+    var open = data.filter(function (r) { return r.status === "Open" || r.status === "Booked"; });
+    var cartons = open.reduce(function (s, r) { return s + r.cartons; }, 0);
+    var dests = {};
+    open.forEach(function (r) { dests[r.dest] = 1; });
+    var val = open.reduce(function (s, r) { return s + exportValue(r); }, 0);
+    document.getElementById("kpi-open").textContent = open.length;
+    document.getElementById("kpi-open-d").textContent = "of " + data.length + " total";
+    document.getElementById("kpi-cartons").textContent = cartons.toLocaleString("en-US");
+    document.getElementById("kpi-dest").textContent = Object.keys(dests).length;
+    document.getElementById("kpi-value").textContent = m0(val);
+  }
+
+  // ---------- Filters ----------
+  function populateFilters() {
+    var crops = {};
+    var dests = {};
+    SEED.forEach(function (r) { crops[r.crop] = 1; dests[r.dest] = 1; });
+    var fc = document.getElementById("f-crop");
+    fc.innerHTML = '<option value="">All crops</option>' +
+      Object.keys(crops).sort().map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
+    var fd = document.getElementById("f-dest");
+    fd.innerHTML = '<option value="">All destinations</option>' +
+      Object.keys(dests).sort().map(function (d) { return '<option>' + esc(d) + '</option>'; }).join('');
+  }
+
+  function filtered() {
+    var txt = document.getElementById("f-text").value.trim().toLowerCase();
+    var fs = document.getElementById("f-status").value;
+    var fc = document.getElementById("f-crop").value;
+    var fd = document.getElementById("f-dest").value;
+    return data.filter(function (r) {
+      if (fs && r.status !== fs) return false;
+      if (fc && r.crop !== fc) return false;
+      if (fd && r.dest !== fd) return false;
+      if (txt && (r.id + " " + r.variety + " " + r.buyer + " " + r.crop).toLowerCase().indexOf(txt) === -1) return false;
+      return true;
+    });
+  }
+
+  // ---------- Table ----------
+  function rowHTML(r) {
+    return '<tr class="clickable" data-id="' + esc(r.id) + '">' +
+      '<td>' + statusBadge(r.status) + '</td>' +
+      '<td><b>' + esc(r.id) + '</b></td>' +
+      '<td><b>' + esc(r.variety) + '</b> <span class="muted small">· ' + esc(r.crop) + '</span></td>' +
+      '<td>' + esc(r.buyer) + '</td>' +
+      '<td>' + esc(r.dest) + '</td>' +
+      '<td>' + fmtDate(r.ship) + '</td>' +
+      '<td class="num">' + r.cartons.toLocaleString("en-US") + '</td>' +
+      '<td class="num">' + m0(exportValue(r)) + '</td></tr>';
+  }
+
+  function renderTable() {
+    var rows = filtered();
+    var tbody = document.getElementById("exp-rows");
+    var empty = document.getElementById("exp-empty");
+    document.getElementById("exp-table").style.display = rows.length ? "" : "none";
+    empty.style.display = rows.length ? "none" : "block";
+    tbody.innerHTML = rows.map(rowHTML).join('');
+  }
+
+  // ---------- Detail drawer ----------
+  function openDetail(id) {
+    var r = data.filter(function (x) { return x.id === id; })[0];
+    if (!r) return;
+    document.getElementById("dd-title").textContent = r.id + " · " + r.variety;
+    var html =
+      '<div class="row" style="gap:8px;margin-bottom:16px">' + statusBadge(r.status) +
+      '<span class="badge accent">' + esc(r.dest) + '</span></div>' +
+      '<div class="grid grid-2" style="margin-bottom:16px">' +
+        '<div class="stat"><div class="label">Variety</div><div class="value" style="font-size:1.1rem">' + esc(r.variety) + '</div><div class="small muted">' + esc(r.crop) + '</div></div>' +
+        '<div class="stat"><div class="label">Est. value</div><div class="value" style="font-size:1.1rem">' + m(exportValue(r)) + '</div><div class="small muted">' + m(r.price) + '/carton</div></div>' +
+      '</div>' +
+      '<div class="grid grid-2" style="margin-bottom:16px">' +
+        '<div class="stat"><div class="label">Buyer</div><div class="value" style="font-size:.95rem">' + esc(r.buyer) + '</div></div>' +
+        '<div class="stat"><div class="label">Cartons</div><div class="value" style="font-size:1.1rem">' + r.cartons.toLocaleString("en-US") + '</div></div>' +
+      '</div>' +
+      '<table class="t" style="margin-bottom:16px">' +
+        '<tr><td class="muted" style="width:44%">Export #</td><td><b>' + esc(r.id) + '</b></td></tr>' +
+        '<tr><td class="muted">Ship date</td><td><b>' + fmtDate(r.ship) + '</b></td></tr>' +
+        '<tr><td class="muted">Destination</td><td><b>' + esc(r.dest) + '</b></td></tr>' +
+        '<tr><td class="muted">Unit price</td><td><b>' + m(r.price) + ' / carton</b></td></tr>' +
+      '</table>' +
+      '<div class="row" style="margin-top:20px;gap:8px">' +
+        '<button class="btn btn-ghost btn-sm" id="dd-advance">Advance status</button>' +
+        '<button class="btn btn-ghost btn-sm" id="dd-edit">Edit (demo)</button>' +
+      '</div>';
+    document.getElementById("dd-body").innerHTML = html;
+
+    var ORDER = ["Open", "Booked", "Shipped", "Delivered"];
+    document.getElementById("dd-advance").addEventListener("click", function () {
+      var idx = ORDER.indexOf(r.status);
+      if (idx < ORDER.length - 1) {
+        r.status = ORDER[idx + 1];
+        FS.toast("Export " + r.id + " → " + r.status);
+        FS.closeDrawer();
+        renderKPIs();
+        renderTable();
+      } else {
+        FS.toast("Already at final status");
+      }
+    });
+    document.getElementById("dd-edit").addEventListener("click", function () { FS.toast("Edit mode (demo)"); });
+
+    FS.openDrawer("detail-drawer");
+  }
+
+  // ---------- Create drawer ----------
+  function populateCreate() {
+    var cropSel = document.getElementById("c-crop");
+    cropSel.innerHTML = CROPS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
+    updateVarieties();
+
+    document.getElementById("c-buyer").innerHTML = BUYERS.map(function (b) { return '<option>' + esc(b) + '</option>'; }).join('');
+    document.getElementById("c-dest").innerHTML = DESTINATIONS.map(function (d) { return '<option>' + esc(d) + '</option>'; }).join('');
+    document.getElementById("c-ship").value = "2026-08-15";
+    document.getElementById("c-cartons").value = "480";
+    document.getElementById("c-price").value = "22.00";
+    document.getElementById("c-status").value = "Open";
+  }
+
+  function updateVarieties() {
+    var crop = document.getElementById("c-crop").value;
+    var vars = CROP_VARIETIES[crop] || [];
+    document.getElementById("c-variety").innerHTML = vars.map(function (v) { return '<option>' + esc(v) + '</option>'; }).join('');
+  }
+
+  function saveCreate() {
+    var crop    = document.getElementById("c-crop").value;
+    var variety = document.getElementById("c-variety").value;
+    var buyer   = document.getElementById("c-buyer").value;
+    var dest    = document.getElementById("c-dest").value;
+    var status  = document.getElementById("c-status").value;
+    var ship    = document.getElementById("c-ship").value || "2026-08-15";
+    var cartons = parseInt(document.getElementById("c-cartons").value, 10) || 0;
+    var price   = parseFloat(document.getElementById("c-price").value) || 0;
+    if (!variety) { FS.toast("Select a variety"); return; }
+    if (cartons <= 0) { FS.toast("Enter carton count"); return; }
+    var newRec = {
+      id: "EX-" + nextNum++,
+      status: status,
+      crop: crop,
+      variety: variety,
+      buyer: buyer,
+      dest: dest,
+      ship: ship,
+      cartons: cartons,
+      price: price
+    };
+    data.unshift(newRec);
+    FS.closeDrawer();
+    renderKPIs();
+    renderTable();
+    FS.toast("Export " + newRec.id + " created · " + newRec.variety);
+  }
+
+  // ---------- Wire up ----------
+  ["f-text", "f-status", "f-crop", "f-dest"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", renderTable);
+    document.getElementById(id).addEventListener("change", renderTable);
+  });
+
+  document.getElementById("exp-rows").addEventListener("click", function (e) {
+    var row = e.target.closest("[data-id]");
+    if (row) openDetail(row.getAttribute("data-id"));
+  });
+
+  document.getElementById("new-exp").addEventListener("click", function () {
+    populateCreate();
+    FS.openDrawer("create-drawer");
+  });
+
+  document.getElementById("c-crop").addEventListener("change", updateVarieties);
+  document.getElementById("c-save").addEventListener("click", saveCreate);
+
+  // ---------- Reset / init ----------
+  window.resetDemo = function () {
+    data = clone(SEED);
+    nextNum = 2411;
+    document.getElementById("f-text").value = "";
+    document.getElementById("f-status").value = "";
+    document.getElementById("f-crop").value = "";
+    document.getElementById("f-dest").value = "";
+    renderKPIs();
+    renderTable();
+    FS.toast("Demo reset");
+  };
+
+  function init() {
+    data = clone(SEED);
+    populateFilters();
+    renderKPIs();
+    renderTable();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
