@@ -50,7 +50,7 @@ a { color: var(--accent-deep); }
 /* ---------- Demo top banner (back-to-showcase) ---------- */
 .demo-banner {
   position: sticky; top: 0; z-index: 100;
-  background: var(--d-ink); color: #fff;
+  background: #16281e; color: #fff;
   display: flex; align-items: center; gap: 14px;
   padding: 8px 16px; font-size: .85rem;
 }

@@ -10,19 +10,19 @@
 </head>
 <body>
 
-<!-- ===================== NAV ===================== -->
-<header class="nav">
-  <div class="wrap nav-inner">
-    <a class="brand" href="#top">
-      <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#16281e"/><path d="M16 26c0-8 0-12 0-14" stroke="#8fd0a6" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M16 14c-5 0-8-3-8-7 4 0 8 2 8 7z" fill="#8fd0a6"/><path d="M16 17c4.5 0 7.5-2.5 7.5-6.5-3.5 0-7.5 2-7.5 6.5z" fill="#4e9b6c"/></svg>
-      Fresh&nbsp;Strategies <span class="muted" style="font-weight:600">· App Demos</span>
+<!-- ===================== HEADER ===================== -->
+<header class="site-header">
+  <div class="wrap inner">
+    <a class="brand" href="#top" aria-label="Fresh Strategies App Demos home">
+      <img src="assets/img/logo.png" alt="Fresh Strategies" height="52" />
+      <span class="brand-sub">App Demos</span>
     </a>
-    <nav class="nav-links">
+    <nav aria-label="Main">
       <a href="#work">Work</a>
       <a href="#capabilities">Capabilities</a>
-      <a href="#process">How I work</a>
-      <a href="https://myfreshstrategies.com">Main site</a>
-      <a class="btn btn-primary nav-cta" href="#contact">Start a conversation</a>
+      <a href="#process">How I Work</a>
+      <a href="https://myfreshstrategies.com">Main Site</a>
+      <a class="contact" href="#contact">Contact</a>
     </nav>
   </div>
 </header>
@@ -30,17 +30,17 @@
 <a id="top"></a>
 
 <!-- ===================== HERO ===================== -->
-<section class="hero">
+<section class="section section--dark hero">
   <div class="wrap">
-    <span class="eyebrow">Fresh Strategies LLC · Custom software studio</span>
+    <span class="kicker">Fresh Strategies LLC · App demos</span>
     <h1>Software that replaces the spreadsheet, the clipboard, and the late‑night data entry.</h1>
-    <p class="lead">
+    <p class="sub">
       I design and build mobile‑first web apps for the teams that run daily operations — harvest crews,
       field foremen, inspectors, and the back office.
       Every app below is a representation of one a team uses today — click through to see how it works.
     </p>
-    <div class="hero-actions">
-      <a class="btn btn-primary btn-lg" href="#work">Browse the work →</a>
+    <div class="btn-row">
+      <a class="btn btn-primary btn-lg" href="#work">Browse the work</a>
       <a class="btn btn-ghost btn-lg" href="#contact">Book a 30‑min call</a>
     </div>
     <div class="hero-stats">
@@ -52,10 +52,10 @@
 </section>
 
 <!-- ===================== WORK ===================== -->
-<section id="work">
+<section class="section" id="work">
   <div class="wrap">
     <div class="section-head">
-      <span class="eyebrow">The work</span>
+      <span class="kicker">The work</span>
       <h2>Real apps, grouped by the teams they serve</h2>
       <p class="muted">
         <b>These are samples, not off‑the‑shelf products.</b> Each represents an app I built to solve a real
@@ -131,10 +131,10 @@
 </section>
 
 <!-- ===================== CAPABILITIES ===================== -->
-<section id="capabilities" style="background:var(--fs-surface); border-top:1px solid var(--fs-border); border-bottom:1px solid var(--fs-border);">
+<section class="section band" id="capabilities">
   <div class="wrap">
     <div class="section-head">
-      <span class="eyebrow">Under the hood</span>
+      <span class="kicker">Under the hood</span>
       <h2>The platform behind the apps</h2>
       <p class="muted">Every app ships on a shared foundation — so security, branding, and data plumbing aren’t reinvented each time.</p>
     </div>
@@ -143,59 +143,60 @@
 </section>
 
 <!-- ===================== PROCESS ===================== -->
-<section id="process">
+<section class="section section--dark" id="process">
   <div class="wrap">
-    <div class="process reveal">
-      <span class="eyebrow" style="background:rgba(255,255,255,.08); color:#fff; border-color:rgba(255,255,255,.15)">How I work</span>
-      <h2>From “our process is a mess” to shipped software</h2>
-      <p class="muted" style="max-width:60ch">A lightweight path that de‑risks the build: we agree on the shape before writing the real thing.</p>
-      <div class="steps">
-        <div class="step"><div class="num">01</div><h4>Map the workflow</h4><p>Sit with the people doing the job today. Document the real steps, the edge cases, and where time leaks.</p></div>
-        <div class="step"><div class="num">02</div><h4>Clickable prototype</h4><p>A throwaway mockup with demo data, like the ones on this page, so we agree on screens and flow before any backend gets built.</p></div>
-        <div class="step"><div class="num">03</div><h4>Build on the standard stack</h4><p>Secure auth, your data, your branding. Built fresh on a hardened, reusable foundation.</p></div>
-        <div class="step"><div class="num">04</div><h4>Ship &amp; iterate</h4><p>Deploy, train the team, and refine against real use. Integrations and later phases as they earn their place.</p></div>
-      </div>
+    <span class="kicker">How I work</span>
+    <h2>From “our process is a mess” to shipped software</h2>
+    <p class="muted" style="max-width:60ch">A lightweight path that de‑risks the build: we agree on the shape before writing the real thing.</p>
+    <div class="steps reveal">
+      <div class="step"><div class="num">01</div><h4>Map the workflow</h4><p>Sit with the people doing the job today. Document the real steps, the edge cases, and where time leaks.</p></div>
+      <div class="step"><div class="num">02</div><h4>Clickable prototype</h4><p>A throwaway mockup with demo data, like the ones on this page, so we agree on screens and flow before any backend gets built.</p></div>
+      <div class="step"><div class="num">03</div><h4>Build on the standard stack</h4><p>Secure auth, your data, your branding. Built fresh on a hardened, reusable foundation.</p></div>
+      <div class="step"><div class="num">04</div><h4>Ship &amp; iterate</h4><p>Deploy, train the team, and refine against real use. Integrations and later phases as they earn their place.</p></div>
     </div>
   </div>
 </section>
 
 <!-- ===================== CONTACT ===================== -->
-<section id="contact">
-  <div class="wrap">
-    <div class="contact reveal">
-      <div>
-        <span class="eyebrow">Let’s talk</span>
-        <h2>Have a process that should be an app?</h2>
-        <p class="lead">Tell me where the spreadsheets and paper are piling up. The fastest start is a 30‑minute call — I’ll come with questions, not a sales pitch.</p>
-        <div class="contact-actions">
-          <a class="btn btn-primary btn-lg" id="book-link" href="https://bookings.cloud.microsoft/bookwithme/user/f04db3a70d1146ada9c01baa52aba936%40myfreshstrategies.com?anonymous&amp;ismsaljsauthenabled" target="_blank" rel="noopener">📅 Book a 30‑minute call</a>
-        </div>
-      </div>
-      <div class="contact-card">
-        <h3 style="margin-bottom:1rem">Or send a note</h3>
-        <form id="contact-form" novalidate>
-          <div class="field">
-            <label for="cf-name">Name</label>
-            <input id="cf-name" name="name" type="text" autocomplete="name" required />
-          </div>
-          <div class="field">
-            <label for="cf-email">Email</label>
-            <input id="cf-email" name="email" type="email" autocomplete="email" required />
-          </div>
-          <div class="field">
-            <label for="cf-company">Company / industry <span class="muted">(optional)</span></label>
-            <input id="cf-company" name="company" type="text" />
-          </div>
-          <div class="field">
-            <label for="cf-msg">What would you like to build or fix?</label>
-            <textarea id="cf-msg" name="message" required></textarea>
-          </div>
-          <button class="btn btn-primary" type="submit" style="width:100%; justify-content:center">Send message</button>
-          <p class="form-note">Opens your email app addressed to Fresh Strategies. Prefer a calendar slot? Use the booking button.</p>
-        </form>
+<section class="section section--dark" id="contact" style="border-top:1px solid var(--line-dark)">
+  <div class="wrap contact-grid">
+    <div>
+      <span class="kicker">Let’s talk</span>
+      <h2>Have a process that should be an app?</h2>
+      <p class="lead">Tell me where the spreadsheets and paper are piling up. The fastest start is a 30‑minute call — I’ll come with questions, not a sales pitch.</p>
+      <div class="btn-row">
+        <a class="btn btn-primary btn-lg" id="book-link" href="https://bookings.cloud.microsoft/bookwithme/user/f04db3a70d1146ada9c01baa52aba936%40myfreshstrategies.com?anonymous&amp;ismsaljsauthenabled" target="_blank" rel="noopener">📅 Book a 30‑minute call</a>
       </div>
     </div>
+    <div class="contact-card">
+      <h3>Or send a note</h3>
+      <form id="contact-form" novalidate>
+        <div class="field">
+          <label for="cf-name">Name</label>
+          <input id="cf-name" name="name" type="text" autocomplete="name" required />
+        </div>
+        <div class="field">
+          <label for="cf-email">Email</label>
+          <input id="cf-email" name="email" type="email" autocomplete="email" required />
+        </div>
+        <div class="field">
+          <label for="cf-company">Company / industry <span class="muted">(optional)</span></label>
+          <input id="cf-company" name="company" type="text" />
+        </div>
+        <div class="field">
+          <label for="cf-msg">What would you like to build or fix?</label>
+          <textarea id="cf-msg" name="message" required></textarea>
+        </div>
+        <button class="btn btn-primary" type="submit" style="width:100%">Send message</button>
+        <p class="form-note">Opens your email app addressed to Fresh Strategies. Prefer a calendar slot? Use the booking button.</p>
+      </form>
+    </div>
+  </div>
+</section>
 
+<!-- ===================== DISCLAIMER ===================== -->
+<section class="section" style="padding:2rem 0">
+  <div class="wrap">
     <div class="disclaimer">
       <b>About these demos:</b> Each app here is a representation of custom software I’ve built, filled with
       invented demo data — not a real client’s system or records. It’s a sample of what I can build to suit your
@@ -207,12 +208,12 @@
 <!-- ===================== FOOTER ===================== -->
 <footer>
   <div class="wrap foot-inner">
-    <div class="brand" style="font-size:1rem">
-      <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true" style="width:26px;height:26px"><rect width="32" height="32" rx="7" fill="#16281e"/><path d="M16 26c0-8 0-12 0-14" stroke="#8fd0a6" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M16 14c-5 0-8-3-8-7 4 0 8 2 8 7z" fill="#8fd0a6"/><path d="M16 17c4.5 0 7.5-2.5 7.5-6.5-3.5 0-7.5 2-7.5 6.5z" fill="#4e9b6c"/></svg>
-      Fresh Strategies LLC
+    <div class="foot-links">
+      <a href="https://myfreshstrategies.com">Main Site</a>
+      <a href="#contact">Contact</a>
+      <a href="#work">Work</a>
     </div>
-    <div>© <span id="year"></span> Fresh Strategies LLC · Custom operational software</div>
-    <div><a href="https://myfreshstrategies.com">Main site</a> · <a href="#contact">Contact</a> · <a href="#work">Work</a></div>
+    <p class="legal">© <span id="year"></span> Fresh Strategies LLC, Fresno, CA</p>
   </div>
 </footer>
 
