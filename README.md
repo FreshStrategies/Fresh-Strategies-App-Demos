@@ -4,7 +4,11 @@ A static, single‑page portfolio that showcases the kind of custom operational 
 builds — each entry is a **representation** paired with a **clickable interactive demo** filled with
 invented data. Pure HTML/CSS/JS, no build step, designed to drop straight onto **GitHub Pages**.
 
-🔗 **Live:** _enable Pages, then this becomes_ `https://freshstrategies.github.io/<repo>/`
+🔗 **Live:** https://demos.myfreshstrategies.com/
+
+**Theming:** the brand palette here mirrors the main site (`FreshStrategies/fresh-strategies-website`,
+live at myfreshstrategies.com) — deep green `#16281e`, site green `#2f6b45`, paper `#f7f6f2`, system fonts.
+If the main site's theme changes, update `assets/css/site.css` and `demos/_shared/demo.css` `:root` blocks to match.
 
 ## What's here
 

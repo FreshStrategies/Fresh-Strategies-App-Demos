@@ -103,7 +103,9 @@
         "Name: " + name + "\nEmail: " + email + (company ? "\nCompany / industry: " + company : "") +
         "\n\n" + msg + "\n\n— Sent from the Fresh Strategies showcase"
       );
-      window.location.href = "mailto:nick@myfreshstrategies.com?subject=" + subject + "&body=" + body;
+      // Address assembled at runtime so it never appears verbatim in source (bot scraping)
+      var to = ["nick", "myfreshstrategies.com"].join("@");
+      window.location.href = "mailto:" + to + "?subject=" + subject + "&body=" + body;
     });
   }
 })();
